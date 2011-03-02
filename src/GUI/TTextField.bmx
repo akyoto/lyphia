@@ -140,6 +140,8 @@ Type TTextField Extends TWidget
 				Self.MoveCursorPosition(1)
 			EndIf
 			
+			' TODO: Copy with Ctrl + C
+			
 			' Input
 			Local char:Int = TInputSystem.GetNextChar()
 			Select char
@@ -167,8 +169,30 @@ Type TTextField Extends TWidget
 					Self.cursorLastBlink = MilliSecs()
 					
 				Default
+					' Ctrl + V
+					If TInputSystem.GetKeyDown(KEY_LCONTROL) And TInputSystem.GetKeyDown(KEY_V)
+						Local tmpWindow:TGadget = CreateWindow("", 0, 0, 100, 24, Null, WINDOW_HIDDEN)
+						Local tmpGadget:TGadget = CreateTextField(0, 0, 100, 24, tmpWindow)
+						
+						GadgetPaste tmpGadget
+						Self.InsertText(GadgetText(tmpGadget))
+						
+						FreeGadget tmpGadget
+						FreeGadget tmpWindow
+					EndIf
+					
 					Self.InsertText(Chr(char))
 			End Select
+			
+			If char <> 0
+				' OnEdit handler
+				If Self.onEdit <> Null
+					' TODO: Remove this temporary bugfix
+					Self.SetAffectingWidget(Self)
+					
+					Self.onEdit(Self.GetAffectingWidget())
+				EndIf
+			EndIf
 			
 			TInputSystem.EraseKeyEvents()
 		EndIf

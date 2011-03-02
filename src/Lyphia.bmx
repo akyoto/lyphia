@@ -11,6 +11,9 @@ Rem
 	--------------------------------
 End Rem
 
+' TODO
+' * SeedRnd set by host in network mode
+
 ' Strict
 SuperStrict
 

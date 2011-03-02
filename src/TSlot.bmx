@@ -74,6 +74,9 @@ Type TSlot
 			EndIf
 			Self.action.Exec(trigger)
 		Else
+			If Self.triggeredEarlier = True
+				Self.action.ExecEnd()
+			EndIf
 			Self.triggeredEarlier = False
 		EndIf
 	End Method

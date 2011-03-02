@@ -58,15 +58,7 @@ Type TEnemy Extends TEntity
 		
 		' Draw HP and MP
 		If Self.target <> Null
-			SetColor 0, 0, 0
-			DrawRectOutline Int(Self.x), Int(Self.y) - 13, Self.img.width, 5
-			SetColor 255, 0, 0
-			DrawRect Int(Self.x) + 1, Int(Self.y) - 12, (Self.hp / Self.maxHP) * (Self.img.width - 2), 3
-			
-			SetColor 0, 0, 0
-			DrawRectOutline Int(Self.x), Int(Self.y) - 8, Self.img.width, 5
-			SetColor 0, 0, 255
-			DrawRect Int(Self.x) + 1, Int(Self.y) - 7, (Self.mp / Self.maxMP) * (Self.img.width - 2), 3
+			Self.DrawHPAndMP()
 		EndIf
 	End Method
 	

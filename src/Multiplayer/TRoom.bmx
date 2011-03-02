@@ -47,10 +47,12 @@ Type TRoom
 	
 	' Disconnect
 	Method Disconnect()
-		If Self.stream
-			Self.stream.Close()
-			Self.stream = Null
-		EndIf
+		Self.streamMutex.Lock()
+			If Self.stream
+				Self.stream.Close()
+				Self.stream = Null
+			EndIf
+		Self.streamMutex.Unlock()
 	End Method
 	
 	' Create
@@ -94,26 +96,34 @@ Function RoomThreadFunc:Object(data:Object)
 	TClientMsgHandler.serverConnectFunc(room)
 	
 	While stream <> Null And stream.GetState() = 1
-		room.streamMutex.Lock()
-			If stream.RecvAvail()
-				' Receive msg
-				While stream.RecvMsg()
-				Wend
-				
-				' Check type of msg
-				If stream.Size() > 0 Then
-					While stream.Eof() = 0
-						TClientMsgHandler.HandleMsg(room)
+		Try
+			room.streamMutex.Lock()
+				If stream.RecvAvail()
+					' Receive msg
+					While stream.RecvMsg()
 					Wend
+					
+					' Check type of msg
+					If stream.Size() > 0 Then
+						While stream.Eof() = 0
+							TClientMsgHandler.HandleMsg(room)
+						Wend
+					EndIf
 				EndIf
+			room.streamMutex.Unlock()
+				
+			room.streamMutex.Lock()
+				' Send
+				While stream.SendMsg()
+				Wend
+			room.streamMutex.Unlock()
+		Catch exc:Object
+			If game.logger <> Null
+				game.logger.Write("Network stream error: " + exc.ToString())
+			Else
+				Print exc.ToString()
 			EndIf
-		room.streamMutex.Unlock()
-			
-		room.streamMutex.Lock()
-			' Send
-			While stream.SendMsg()
-			Wend
-		room.streamMutex.Unlock()
+		End Try
 		
 		Delay game.networkThreadDelay
 	Wend

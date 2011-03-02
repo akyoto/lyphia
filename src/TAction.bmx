@@ -6,11 +6,18 @@ Import "TTrigger.bmx"
 
 ' TAction
 Type TAction
+	' Exec
+	Method Exec(trigger:TTrigger)
+		
+	End Method
+	
 	' ExecStart
 	Method ExecStart(trigger:TTrigger) 
 		
 	End Method
 	
-	' Exec
-	Method Exec(trigger:TTrigger) Abstract
+	' ExecEnd
+	Method ExecEnd() 
+		
+	End Method
 End Type

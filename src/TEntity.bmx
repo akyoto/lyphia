@@ -63,6 +63,7 @@ Type TEntity
 	Field img:TImage
 	
 	Field speed:Float
+	Field directionLocked:Int
 	
 	Field currentAnimation:TAnimation
 	
@@ -105,6 +106,9 @@ Type TEntity
 		' Buff containers
 		Self.buffs = TBuffContainer.Create()
 		Self.debuffs = TBuffContainer.Create()
+		
+		' Direction
+		Self.SetDirectionLock(False)
 		
 		' Lua
 		If luaFile.Length > 0
@@ -211,15 +215,50 @@ Type TEntity
 		' Offset
 		Self.grpWeaponEffects.SetOffset(Self.GetX(), Self.GetY())
 		
+		ResetMax2D()
 		If Self.animAttack.GetDirection() = TAnimationAttack.DIRECTION_UP
 			Self.grpWeaponEffects.Draw()
+			
+			' TODO: Remove hardcoded shadow
+			Rem
+			ResetMax2D()
+			.SetColor 0, 0, 0
+			.SetAlpha 0.15
+			.SetScale 1, 0.65
+			.SetRotation -15
+			DrawImage Self.img, Int(Self.x) - 6, Int(Self.y) + 8, Self.currentAnimation.GetFrame()
+			End Rem
+			
 			ResetMax2D()
 			DrawImage Self.img, Int(Self.x), Int(Self.y), Self.currentAnimation.GetFrame()
 		Else
+			' TODO: Remove hardcoded shadow
+			Rem
+			.SetColor 0, 0, 0
+			.SetAlpha 0.15
+			.SetScale 1, 0.65
+			.SetRotation -15
+			DrawImage Self.img, Int(Self.x) - 6, Int(Self.y) + 8, Self.currentAnimation.GetFrame()
+			ResetMax2D()
+			End Rem
+			
 			DrawImage Self.img, Int(Self.x), Int(Self.y), Self.currentAnimation.GetFrame()
 			Self.grpWeaponEffects.Draw()
 			ResetMax2D()
 		EndIf
+	End Method
+	
+	 ' DrawHPAndMP
+	Method DrawHPAndMP()
+		SetColor 0, 0, 0
+		DrawRectOutline Int(Self.x), Int(Self.y) - 13, Self.img.width, 5
+		SetColor 255, 0, 0
+		DrawRect Int(Self.x) + 1, Int(Self.y) - 12, (Self.hp / Self.maxHP) * (Self.img.width - 2), 3
+		
+		SetColor 0, 0, 0
+		DrawRectOutline Int(Self.x), Int(Self.y) - 8, Self.img.width, 5
+		SetColor 0, 0, 255
+		DrawRect Int(Self.x) + 1, Int(Self.y) - 7, (Self.mp / Self.maxMP) * (Self.img.width - 2), 3
 	End Method
 	
 	' SetSpeed
@@ -282,8 +321,23 @@ Type TEntity
 		Return Self.y + Self.img.height
 	End Method
 	
+	' SetDirectionLock
+	Method SetDirectionLock(lockedDirection:Int)
+		If lockedDirection
+			Self.SetDirection(lockedDirection)
+		EndIf
+		
+		Self.directionLocked = lockedDirection
+	End Method
+	
 	' SetDirection
 	Method SetDirection(entDirection:Int)
+		If Self.directionLocked
+			Return
+			'gsInGame.player.animWalk.SetDirection(dir)
+			'gsInGame.player.animAttack.ApplyDirectionFromWalkAni(gsInGame.player.animWalk)
+		EndIf
+		
 		Select entDirection
 			Case TEntity.DIRECTION_UP
 				Self.animWalk.SetDirection(TAnimationWalk.DIRECTION_UP)
@@ -303,6 +357,20 @@ Type TEntity
 		End Select
 		
 		Self.animAttack.ApplyDirectionFromWalkAni(Self.animWalk)
+	End Method
+	
+	' UpdateDirection
+	Method UpdateDirection(mX:Float, mY:Float)
+		If mX = 0 And mY = 0
+			Return
+		End If
+		
+		Self.baseDirection = Self.animWalk.GetDirectionByCoords(mX, mY)
+		
+		If Self.directionLocked = 0
+			Self.animWalk.SetDirection(Self.baseDirection)
+			Self.animAttack.ApplyDirectionFromWalkAni(Self.animWalk)
+		EndIf
 	End Method
 	
 	' DelayCast
@@ -392,6 +460,15 @@ Type TEntity
 		Return Self.hp > 0
 	End Method
 	
+	' SetHP
+	Method SetHP(amount:Float)
+		Self.hp = amount
+		
+		If Self.hp > Self.maxHP
+			Self.hp = Self.maxHP
+		EndIf
+	End Method
+	
 	' AddHP
 	Method AddHP(amount:Float)
 		Self.hp:+amount
@@ -447,17 +524,6 @@ Type TEntity
 	Method EndCast()
 		Self.SetAnimation(Self.animWalk) 
 		Self.castingSkill = Null
-	End Method
-	
-	' UpdateDirection
-	Method UpdateDirection(mX:Float, mY:Float)
-		If mX = 0 And mY = 0
-			Return
-		End If
-		
-		Self.baseDirection = Self.animWalk.GetDirectionByCoords(mX, mY)
-		Self.animWalk.SetDirection(Self.baseDirection)
-		Self.animAttack.ApplyDirectionFromWalkAni(Self.animWalk)
 	End Method
 	
 	' UpdateBuffs

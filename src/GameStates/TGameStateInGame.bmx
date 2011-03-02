@@ -110,10 +110,11 @@ Type TGameStateInGame Extends TGameState
 	Field parties:TParty[]
 	Field room:TRoom
 	Field server:TServer
-	Field sentPosLast:Int
 	
 	Field netWalkX:Byte
 	Field netWalkY:Byte
+	
+	Field lastArenaUpdate:Int
 	
 	' Init
 	Method Init()
@@ -580,8 +581,10 @@ Type TGameStateInGame Extends TGameState
 			Self.pauseTextWritten :+ 1
 		EndIf
 		
-		' Swap buffers
-		Flip game.vsync
+		' Networking
+		If Self.inNetworkMode
+			Self.UpdateArena()
+		EndIf
 		
 		' Particles out of screen
 		?Not Threaded
@@ -590,6 +593,9 @@ Type TGameStateInGame Extends TGameState
 			Self.UpdateParticlesOutOfScreen()
 		End If
 		?
+		
+		' Swap buffers
+		Flip game.vsync
 	End Method
 	
 	' UpdateSkillView
@@ -936,24 +942,6 @@ Type TGameStateInGame Extends TGameState
 		Next
 	End Method
 	
-	' FindVisibleEnemies
-	Method FindVisibleEnemies()
-		Local h:Int
-		Local enemySpawn:TEnemySpawn
-		Local enemy:TEnemy
-		
-		For h = Self.map.tileTop To Self.map.tileBottom
-			For enemySpawn = EachIn gsInGame.map.enemySpawns[h]
-				enemy = enemySpawn.enemy
-				If enemy <> Null
-					If enemy.link = Null
-						enemy.link = Self.enemiesOnScreen.AddLast(enemy)
-					EndIf
-				EndIf
-			Next
-		Next
-	End Method
-	
 	' UpdateEnemies
 	Method UpdateEnemies()
 		' Collision with an enemy
@@ -1074,6 +1062,48 @@ Type TGameStateInGame Extends TGameState
 					enemy.EndCast()
 				EndIf
 			EndIf
+		Next
+	End Method
+	
+	' UpdateArena
+	Method UpdateArena()
+		If Self.server <> Null
+			If MilliSecs() - Self.lastArenaUpdate > 500
+				Self.server.clientListMutex.Lock()
+					' Send all clients except myself...
+					For Local client:TLyphiaClient = EachIn Self.server.clientList
+						If client.player <> Self.player
+							client.streamMutex.Lock()
+								' ...data about all players
+								For Local bcClient:TLyphiaClient = EachIn Self.server.clientList
+									client.stream.WriteByte(50)
+									client.stream.WriteByte(bcClient.player.GetID())
+									client.stream.WriteFloat(bcClient.player.hp)
+								Next
+							client.streamMutex.Unlock()
+						EndIf
+					Next
+				Self.server.clientListMutex.Unlock()
+				Self.lastArenaUpdate = MilliSecs()
+			EndIf
+		EndIf
+	End Method
+	
+	' FindVisibleEnemies
+	Method FindVisibleEnemies()
+		Local h:Int
+		Local enemySpawn:TEnemySpawn
+		Local enemy:TEnemy
+		
+		For h = Self.map.tileTop To Self.map.tileBottom
+			For enemySpawn = EachIn gsInGame.map.enemySpawns[h]
+				enemy = enemySpawn.enemy
+				If enemy <> Null
+					If enemy.link = Null
+						enemy.link = Self.enemiesOnScreen.AddLast(enemy)
+					EndIf
+				EndIf
+			Next
 		Next
 	End Method
 	
@@ -1324,6 +1354,14 @@ Type TGameStateInGame Extends TGameState
 		For Local party:TParty = EachIn gsInGame.parties
 			For Local player:TPlayer = EachIn party.GetMembersList()
 				If row = player.tileY
+					' Draw nickname
+					If gsInGame.inNetworkMode
+						.SetColor 0, 0, 0
+						DrawTextCentered player.GetName(), player.GetMidX(), player.GetY() - 24
+						player.DrawHPAndMP()
+					EndIf
+					
+					' This will ResetMax2D()
 					player.Draw()
 				EndIf
 			Next
@@ -1566,8 +1604,6 @@ End Type
 
 ' TActionLockDirection
 Type TActionLockDirection Extends TAction
-	Field dir:Int = -1
-	
 	' Init
 	Method Init()
 		
@@ -1575,13 +1611,28 @@ Type TActionLockDirection Extends TAction
 	
 	' ExecStart
 	Method ExecStart(trigger:TTrigger)
-		dir = gsInGame.player.animWalk.GetDirection() 
+		Local dir:Byte = gsInGame.player.animWalk.GetDirection()
+		
+		If gsInGame.inNetworkMode
+			gsInGame.room.streamMutex.Lock()
+				gsInGame.room.stream.WriteByte(101)
+				gsInGame.room.stream.WriteByte(dir)
+			gsInGame.room.streamMutex.Unlock()
+		EndIf
+		
+		gsInGame.player.SetDirectionLock(dir)
 	End Method
 	
-	' Exec
-	Method Exec(trigger:TTrigger)
-		gsInGame.player.animWalk.SetDirection(dir)
-		gsInGame.player.animAttack.ApplyDirectionFromWalkAni(gsInGame.player.animWalk)
+	' ExecEnd
+	Method ExecEnd()
+		If gsInGame.inNetworkMode
+			gsInGame.room.streamMutex.Lock()
+				gsInGame.room.stream.WriteByte(101)
+				gsInGame.room.stream.WriteByte(0)
+			gsInGame.room.streamMutex.Unlock()
+		EndIf
+		
+		gsInGame.player.SetDirectionLock(False)
 	End Method
 	
 	' Create

@@ -35,7 +35,7 @@ Type TPlayer Extends TEntity
 		
 		' Find a ID
 		While TPlayer.players[TPlayer.count] <> Null
-			TPlayer.count :+ 1
+			TPlayer.count = (TPlayer.count + 1) Mod 256
 		Wend
 		
 		Self.SetID(TPlayer.count)
@@ -91,6 +91,11 @@ Type TPlayer Extends TEntity
 			' Buffs
 			Self.UpdateBuffs()
 		Self.mutex.Unlock()
+	End Method
+	
+	' Remove
+	Method Remove()
+		TPlayer.players[Self.id] = Null
 	End Method
 	
 	' Die

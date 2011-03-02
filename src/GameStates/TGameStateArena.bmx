@@ -38,6 +38,7 @@ Type TGameStateArena Extends TGameState
 	Field joinButton:TButton
 	Field hostButton:TButton
 	Field roomContainer:TWidget
+	Field nameField:TTextField
 	Field chatField:TTextField
 	Field msgList:TListBox
 	Field clientList:TListBox[2]
@@ -119,24 +120,32 @@ Type TGameStateArena Extends TGameState
 		' Main container
 		Self.menuContainer = TWindow.Create("menuContainer", "Arena")
 		Self.menuContainer.SetPosition(0.5, 0.5)
-		Self.menuContainer.SetSizeAbs(180, 140)
+		Self.menuContainer.SetSizeAbs(180, 188)
 		Self.menuContainer.SetPadding(5, 5, 5, 5)
 		Self.menuContainer.UseCurrentAreaAsClientArea()
 		Self.menuContainer.SetPositionAbs(-Self.menuContainer.GetWidth() / 2, -Self.menuContainer.GetHeight() / 2)
 		Self.gui.Add(Self.menuContainer)
 		
 		' Buttons
-		Self.menuContainer.Add(TLabel.Create("roomListLabel", "Choose a room:", 0, 0))
-		Self.roomList = TTextField.Create("roomList", "localhost", 0, 20, 0, 24)
+		Self.menuContainer.Add(TLabel.Create("nameFieldLabel", "Your nickname:", 0, 0))
+		
+		Self.nameField = TTextField.Create("nameField", "", 0, 20, 0, 24)
+		Self.nameField.SetSize(1.0, 0)
+		Self.nameField.onEdit = TGameStateArena.SetNickNameFunc
+		Self.menuContainer.Add(Self.nameField)
+		
+		Self.menuContainer.Add(TLabel.Create("roomListLabel", "Choose a room:", 0, 50))
+		
+		Self.roomList = TTextField.Create("roomList", "localhost", 0, 70, 0, 24)
 		Self.roomList.SetSize(1.0, 0)
 		Self.menuContainer.Add(Self.roomList)
 		
-		Self.joinButton = TButton.Create("joinButton", "Join room", 0, 50, 0, 24)
+		Self.joinButton = TButton.Create("joinButton", "Join room", 0, 100, 0, 24)
 		Self.joinButton.SetSize(1.0, 0)
 		Self.joinButton.onClick = TGameStateArena.JoinRoomFunc
 		Self.menuContainer.Add(Self.joinButton)
 		
-		Self.hostButton = TButton.Create("hostButton", "Host room", 0, 75, 0, 24)
+		Self.hostButton = TButton.Create("hostButton", "Host room", 0, 125, 0, 24)
 		Self.hostButton.SetSize(1.0, 0)
 		Self.hostButton.onClick = TGameStateArena.HostRoomFunc
 		Self.menuContainer.Add(Self.hostButton)
@@ -364,7 +373,7 @@ Type TGameStateArena Extends TGameState
 	' HostRoomFunc
 	Function HostRoomFunc(widget:TWidget)
 		gsArena.HostRoom(gsArena.roomList.GetText())
-		gsArena.JoinRoom("localhost")
+		gsArena.JoinRoom("127.0.0.1")
 		gsArena.UpdateGUIState()
 	End Function
 	
@@ -372,6 +381,11 @@ Type TGameStateArena Extends TGameState
 	Function LeaveRoomFunc(widget:TWidget)
 		gsArena.LeaveRoom()
 		gsArena.UpdateGUIState()
+	End Function
+	
+	' SetNickNameFunc
+	Function SetNickNameFunc(widget:TWidget)
+		gsArena.nickName = widget.GetText()
 	End Function
 	
 	' ClientSendChatMsgFunc
@@ -430,23 +444,9 @@ Type TServerFuncs
 		TServerMsgHandler.SetFunction(4, TServerFuncs.ChangeParty)
 		TServerMsgHandler.SetFunction(20, TServerFuncs.ChatMsg)
 		TServerMsgHandler.SetFunction(100, TServerFuncs.MovePlayer)
+		TServerMsgHandler.SetFunction(101, TServerFuncs.LockPlayerDirection)
 		TServerMsgHandler.SetFunction(110, TServerFuncs.StartSkillCast)
 		TServerMsgHandler.SetFunction(255, TServerFuncs.StartGame)
-	End Function
-	
-	' ClientDisconnected
-	Function ClientDisconnected(client:TLyphiaClient)
-		' Notify other players
-		client.server.clientListMutex.Lock()
-			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
-				' Code + Team number + Player name
-				bcClient.streamMutex.Lock()
-					bcClient.stream.WriteByte(2)
-					bcClient.stream.WriteByte(client.player.GetParty() = gsArena.parties[1])
-					bcClient.stream.WriteLine(client.player.GetName())
-				bcClient.streamMutex.Unlock()
-			Next
-		client.server.clientListMutex.Unlock()
 	End Function
 	
 	' ClientJoined
@@ -464,21 +464,39 @@ Type TServerFuncs
 		' Notify other players
 		client.server.clientListMutex.Lock()
 			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
-				' Code + Team number + Player name
+				' Inform existing clients about {Code + Player ID + Team number + Player name} of the new player
 				bcClient.streamMutex.Lock()
 					bcClient.stream.WriteByte(1)
+					bcClient.stream.WriteByte(client.player.GetID())
 					bcClient.stream.WriteByte(team)
 					bcClient.stream.WriteLine(name)
 				bcClient.streamMutex.Unlock()
 				
-				' Tell the player about the other clients
+				' Tell the new player about the other clients who already joined the room
 				If bcClient <> client
 					client.streamMutex.Lock()
 						client.stream.WriteByte(3)
+						client.stream.WriteByte(bcClient.player.GetID())
 						client.stream.WriteByte(bcClient.player.GetParty() = gsArena.parties[1])
 						client.stream.WriteLine(bcClient.player.GetName())
 					client.streamMutex.Unlock()
 				EndIf
+			Next
+		client.server.clientListMutex.Unlock()
+	End Function
+	
+	' ClientDisconnected
+	Function ClientDisconnected(client:TLyphiaClient)
+		' Notify other players
+		client.server.clientListMutex.Lock()
+			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
+				' Code + Team number + Player name
+				bcClient.streamMutex.Lock()
+					bcClient.stream.WriteByte(2)
+					bcClient.stream.WriteByte(client.player.GetID())
+					bcClient.stream.WriteByte(client.player.GetParty() = gsArena.parties[1])
+					bcClient.stream.WriteLine(client.player.GetName())
+				bcClient.streamMutex.Unlock()
 			Next
 		client.server.clientListMutex.Unlock()
 	End Function
@@ -558,6 +576,23 @@ Type TServerFuncs
 		End Rem
 	End Function
 	
+	' LockPlayerDirection
+	Function LockPlayerDirection(client:TLyphiaClient)
+		Local direction:Byte = client.stream.ReadByte()
+		
+		client.server.clientListMutex.Lock()
+			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
+				If bcClient <> client
+					bcClient.streamMutex.Lock()
+						bcClient.stream.WriteByte(101)
+						bcClient.stream.WriteByte(client.player.GetID())
+						bcClient.stream.WriteByte(direction)
+					bcClient.streamMutex.Unlock()
+				EndIf
+			Next
+		client.server.clientListMutex.Unlock()
+	End Function
+	
 	' StartSkillCast
 	Function StartSkillCast(client:TLyphiaClient)
 		Local slotID:Byte = client.stream.ReadByte()
@@ -581,6 +616,10 @@ Type TServerFuncs
 				bcClient.streamMutex.Lock()
 					bcClient.stream.WriteByte(255)
 					bcClient.stream.WriteByte(bcClient.player.GetID())
+					'bcClient.stream.WriteByte(client.server.clientList.length)
+					'For Local bcClientTmp:TLyphiaClient = EachIn client.server.clientList
+					'	bcClient.stream.WriteByte(bcClientTmp.player.GetID())
+					'Next
 				bcClient.streamMutex.Unlock()
 			Next
 		client.server.clientListMutex.Unlock()
@@ -599,7 +638,9 @@ Type TClientFuncs
 		TClientMsgHandler.SetFunction(3, TClientFuncs.ClientList)
 		TClientMsgHandler.SetFunction(4, TClientFuncs.ChangeParty)
 		TClientMsgHandler.SetFunction(20, TClientFuncs.ChatMsg)
+		TClientMsgHandler.SetFunction(50, TClientFuncs.SetHP)
 		TClientMsgHandler.SetFunction(100, TClientFuncs.MovePlayer)
+		TClientMsgHandler.SetFunction(101, TClientFuncs.LockPlayerDirection)
 		TClientMsgHandler.SetFunction(110, TClientFuncs.StartSkillCast)
 		TClientMsgHandler.SetFunction(255, TClientFuncs.StartGame)
 	End Function
@@ -607,17 +648,20 @@ Type TClientFuncs
 	' ServerDisconnected
 	Function ServerDisconnected(room:TRoom)
 		' TODO: Maybe a mutex is needed
+		'gsArena.room.Disconnect()
 		gsArena.room = Null
 		gsArena.UpdateGUIState()
 	End Function
 	
 	' ClientJoined
 	Function ClientJoined(room:TRoom)
+		Local playerID:Byte = room.stream.ReadByte()
 		Local team:Byte = room.stream.ReadByte()
 		Local name:String = room.stream.ReadLine()
 		
 		If gsArena.server = Null
 			Local player:TPlayer = TPlayer.Create("")
+			player.SetID(playerID)
 			player.SetName(name)
 			gsArena.parties[team].Add(player)
 			If name = gsArena.nickName
@@ -634,10 +678,12 @@ Type TClientFuncs
 	
 	' ClientList
 	Function ClientList(room:TRoom)
+		Local playerID:Byte = room.stream.ReadByte()
 		Local team:Byte = room.stream.ReadByte()
 		Local name:String = room.stream.ReadLine()
 		
 		Local player:TPlayer = TPlayer.Create("")
+		player.SetID(playerID)
 		player.SetName(name)
 		gsArena.parties[team].Add(player)
 		
@@ -684,6 +730,16 @@ Type TClientFuncs
 		gsArena.guiMutex.Unlock()
 	End Function
 	
+	' SetHP
+	Function SetHP(room:TRoom)
+		Local playerID:Byte = room.stream.ReadByte()
+		Local hp:Float = room.stream.ReadFloat()
+		
+		Local player:TPlayer = TPlayer.players[playerID]
+		
+		player.SetHP(hp)
+	End Function
+	
 	' MovePlayer
 	Function MovePlayer(room:TRoom)
 		Local playerID:Byte = room.stream.ReadByte()
@@ -702,6 +758,16 @@ Type TClientFuncs
 		'player.mutex.Unlock()
 	End Function
 	
+	' LockPlayerDirection
+	Function LockPlayerDirection(room:TRoom)
+		Local playerID:Byte = room.stream.ReadByte()
+		Local direction:Byte = room.stream.ReadByte()
+		
+		Local player:TPlayer = TPlayer.players[playerID]
+		
+		player.SetDirectionLock(direction)
+	End Function
+	
 	' StartSkillCast
 	Function StartSkillCast(room:TRoom)
 		Local playerID:Byte = room.stream.ReadByte()
@@ -713,7 +779,7 @@ Type TClientFuncs
 	
 	' StartGame
 	Function StartGame(room:TRoom)
-		Local playerID:Int = room.stream.ReadByte()
+		Local playerID:Byte = room.stream.ReadByte()
 		
 		Rem
 		For Local I:Int = 0 Until 256
@@ -729,6 +795,7 @@ Type TClientFuncs
 	
 	' ClientDisconnected
 	Function ClientDisconnected(room:TRoom)
+		Local playerID:Byte = room.stream.ReadByte()
 		Local team:Byte = room.stream.ReadByte()
 		Local name:String = room.stream.ReadLine()
 		
@@ -738,6 +805,8 @@ Type TClientFuncs
 			gsArena.clientList[team].RemoveItemByText(name)
 			gsArena.parties[team].RemoveByName(name)
 		gsArena.guiMutex.Unlock()
+		
+		TPlayer.players[playerID].Remove()
 		
 		' TODO: Mutex
 		gsArena.parties[team].RemoveByName(name)

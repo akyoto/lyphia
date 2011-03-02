@@ -3,6 +3,7 @@ SuperStrict
 
 ' Modules
 Import BRL.Max2D
+Import MaxGUI.Drivers
 'Import BtbN.GLDraw2D
 
 ' Files
