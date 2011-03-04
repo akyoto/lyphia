@@ -115,10 +115,13 @@ Type TGameStateInGame Extends TGameState
 	Field server:TServer
 	Field arenaGUI:TGUI
 	
+	Field pingSent:Int
+	
 	Field netWalkX:Byte
 	Field netWalkY:Byte
 	
 	Field lastArenaUpdate:Int
+	Field lastPingCheck:Int
 	
 	' Init
 	Method Init()
@@ -149,7 +152,7 @@ Type TGameStateInGame Extends TGameState
 		game.logger.Write("Initializing player")
 		
 		If Self.inNetworkMode = False
-			Self.player = TPlayer.Create("Zeyph")
+			Self.player = TPlayer.Create("Kimiko")
 			
 			Self.parties = New TParty[1]
 			Self.parties[0] = TParty.Create("My party")
@@ -188,19 +191,19 @@ Type TGameStateInGame Extends TGameState
 		game.logger.Write("Setting up movement slots")
 		Self.moveSlots[0] = TSlot.Create(TActionMove.Create(TAnimationWalk.DIRECTION_UP))
 		Self.moveSlots[0].AddTrigger(TKeyTrigger.Create(KEY_UP, True))
-		'Self.moveSlots[0].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_Y, -1))
+		Self.moveSlots[0].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_Y, -1))
 		
 		Self.moveSlots[1] = TSlot.Create(TActionMove.Create(TAnimationWalk.DIRECTION_DOWN))
 		Self.moveSlots[1].AddTrigger(TKeyTrigger.Create(KEY_DOWN, True))
-		'Self.moveSlots[1].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_Y, 1))
+		Self.moveSlots[1].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_Y, 1))
 		
 		Self.moveSlots[2] = TSlot.Create(TActionMove.Create(TAnimationWalk.DIRECTION_LEFT))
 		Self.moveSlots[2].AddTrigger(TKeyTrigger.Create(KEY_LEFT, True))
-		'Self.moveSlots[2].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_X, -1))
+		Self.moveSlots[2].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_X, -1))
 		
 		Self.moveSlots[3] = TSlot.Create(TActionMove.Create(TAnimationWalk.DIRECTION_RIGHT))
 		Self.moveSlots[3].AddTrigger(TKeyTrigger.Create(KEY_RIGHT, True))
-		'Self.moveSlots[3].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_X, 1))
+		Self.moveSlots[3].AddTrigger(TJoyHatTrigger.Create(TJoyHatTrigger.AXIS_X, 1))
 		
 		Self.moveSlots[4] = TSlot.Create(TActionLockDirection.Create())
 		Self.moveSlots[4].AddTrigger(TKeyTrigger.Create(KEY_LSHIFT, True))
@@ -490,6 +493,13 @@ Type TGameStateInGame Extends TGameState
 		DrawText "Animation: " + GetTypeName(Self.player.currentAnimation), 5, 125 + 190
 		DrawText "Anim.Frame: " + Self.player.currentAnimation.frame, 5, 140 + 190
 		?
+		
+		' Network mode
+		If Self.inNetworkMode
+			DrawText "[Team 1] Kills: " + Self.parties[0].GetKillCount(), 5, 155 + 190
+			DrawText "[Team 2] Kills: " + Self.parties[1].GetKillCount(), 5, 170 + 190
+			DrawText "Ping: " + Self.player.ping + " ms", 5, 200 + 190
+		EndIf
 		
 		' Status
 		Self.DrawStatus()
@@ -1016,8 +1026,8 @@ Type TGameStateInGame Extends TGameState
 									client.stream.WriteByte(30)
 									client.stream.WriteByte(TPlayer(player.killedBy).GetID())
 									client.stream.WriteByte(player.GetID())
-									client.stream.WriteByte(player.killedBy.GetKillCount())
-									client.stream.WriteByte(player.GetDeathCount())
+									client.stream.WriteShort(player.killedBy.GetKillCount())
+									client.stream.WriteShort(player.GetDeathCount())
 								client.streamMutex.Unlock()
 							Next
 							
@@ -1045,6 +1055,16 @@ Type TGameStateInGame Extends TGameState
 				Self.server.clientListMutex.Unlock()
 				Self.lastArenaUpdate = MilliSecs()
 			EndIf
+		EndIf
+		
+		' Ping check
+		If MilliSecs() - Self.lastPingCheck > 1000
+			room.streamMutex.Lock()
+				room.stream.WriteByte(230)
+			room.streamMutex.UnLock()
+			
+			Self.pingSent = MilliSecs()
+			Self.lastPingCheck = MilliSecs()
 		EndIf
 	End Method
 	

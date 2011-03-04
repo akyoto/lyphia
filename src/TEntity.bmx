@@ -67,6 +67,8 @@ Type TEntity
 	
 	Field currentAnimation:TAnimation
 	
+	Field ping:Int
+	
 	Field killCount:Int
 	Field deathCount:Int
 	
@@ -512,10 +514,12 @@ Type TEntity
 		
 		If Self.hp <= 0
 			' Register kill
-			If Self.killedBy = Null
-				Self.killedBy = caster
+			If Self.killedBy = Null 
+				If caster <> Null
+					Self.killedBy = caster
+					caster.SetKillCount(caster.GetKillCount() + 1)
+				EndIf
 				
-				caster.SetKillCount(caster.GetKillCount() + 1)
 				Self.SetDeathCount(Self.GetDeathCount() + 1)
 			EndIf
 			

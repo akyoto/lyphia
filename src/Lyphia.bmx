@@ -16,6 +16,8 @@ End Rem
 ' * SeedRnd set by host in network mode
 ' * Custom autotiles
 ' * Fix arena bugs (leaving / joining rooms)
+' * Fix kill announcements
+' * Add team markers
 
 ' Strict
 SuperStrict

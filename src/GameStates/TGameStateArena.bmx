@@ -491,6 +491,7 @@ Type TServerFuncs
 		TServerMsgHandler.SetFunction(100, TServerFuncs.MovePlayer)
 		TServerMsgHandler.SetFunction(101, TServerFuncs.LockPlayerDirection)
 		TServerMsgHandler.SetFunction(110, TServerFuncs.StartSkillCast)
+		TServerMsgHandler.SetFunction(230, TServerFuncs.PingCheck)
 		TServerMsgHandler.SetFunction(255, TServerFuncs.StartGame)
 	End Function
 	
@@ -656,6 +657,13 @@ Type TServerFuncs
 		client.server.clientListMutex.Unlock()
 	End Function
 	
+	' PingCheck
+	Function PingCheck(client:TLyphiaClient)
+		client.streamMutex.Lock()
+			client.stream.WriteByte(230)
+		client.streamMutex.Unlock()
+	End Function
+	
 	' StartGame
 	Function StartGame(client:TLyphiaClient)
 		' Notify other players
@@ -691,6 +699,7 @@ Type TClientFuncs
 		TClientMsgHandler.SetFunction(100, TClientFuncs.MovePlayer)
 		TClientMsgHandler.SetFunction(101, TClientFuncs.LockPlayerDirection)
 		TClientMsgHandler.SetFunction(110, TClientFuncs.StartSkillCast)
+		TClientMsgHandler.SetFunction(230, TClientFuncs.PingCheck)
 		TClientMsgHandler.SetFunction(255, TClientFuncs.StartGame)
 	End Function
 	
@@ -794,6 +803,17 @@ Type TClientFuncs
 		killer.SetKillCount(kills)
 		killed.SetDeathCount(deaths)
 		
+		Local nTileX:Int = gsInGame.map.GetStartTileX()
+		Local nTileY:Int = gsInGame.map.GetStartTileY()
+		killed.x = nTileX * gsInGame.map.GetTileSizeX()
+		killed.y = nTileY * gsInGame.map.GetTileSizeY()
+		
+		If gsInGame.player = killed
+			gsInGame.map.GetTileCoordsDirect(killed.GetMidX(), killed.y + killed.img.height - 5, killed.tileX, killed.tileY)
+			gsInGame.tileX = killed.tileX
+			gsInGame.tileY = killed.tileY
+		EndIf
+		
 		gsArena.guiMutex.Lock()
 			If killer <> Null
 				gsArena.msgList.AddItem(killed.GetName() + " has been killed by " + killer.GetName() + ".")
@@ -849,6 +869,18 @@ Type TClientFuncs
 		
 		Local player:TPlayer = TPlayer.players[playerID]
 		player.techSlots[slotID].GetAction().Exec(Null)
+	End Function
+	
+	' PingCheck
+	Function PingCheck(room:TRoom)
+		gsInGame.player.ping = MilliSecs() - gsInGame.pingSent
+		
+		Rem
+		gsArena.guiMutex.Lock()
+			gsArena.msgList.AddItem("Ping: " + gsInGame.player.ping + " ms")
+			gsArena.msgList.ScrollToMax()
+		gsArena.guiMutex.Unlock()
+		End Rem
 	End Function
 	
 	' StartGame
