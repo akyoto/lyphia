@@ -147,7 +147,7 @@ Type TMeteor Extends TFireMagicInstance
 		Self.offsetY = nOffsetY
 		
 		Self.maxRunTime = 550
-		Self.dmg = 100
+		Self.dmg = Rand(50, 70) + Self.explosionRadius * 1.5
 		
 		Self.meteorScale = Float(Self.explosionRadius) / gsInGame.particleImgFire.width + 0.3
 	End Method

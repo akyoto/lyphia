@@ -17,19 +17,21 @@ Type TPlayer Extends TEntity
 	Field movementX:Byte
 	Field movementY:Byte
 	
+	Field characterName:String
+	
 	' Init
 	Method Init(scriptFile:String)
 		Self.isPlayerFlag = True
 		
-		Super.Init("")
-		Super.InitStatus(1, 1000, 450)
+		Super.Init(scriptFile)
+		
+		Self.SetName(Self.characterName)
 		
 		' Skill slots
-		Self.techSlots = New TSlot[4 + 4 + 4 + 1]
+		'Self.techSlots = New TSlot[4 + 4 + 4 + 1]
 		
 		' TODO: Remove hardcoded stuff
-		Self.SetImageFile("chara-14.png")
-		Self.animAttack.LoadConfig(FS_ROOT + "data/characters/chara-14.ini")
+		'Self.SetImageFile("Kimiko.png")
 		
 		Self.mutex = CreateMutex()
 		
@@ -39,6 +41,11 @@ Type TPlayer Extends TEntity
 		Wend
 		
 		Self.SetID(TPlayer.count)
+	End Method
+	
+	' LoadConfigFile
+	Method LoadConfigFile(file:String)
+		Self.animAttack.LoadConfig(FS_ROOT + "data/characters/" + file)
 	End Method
 	
 	' GetID
@@ -69,6 +76,16 @@ Type TPlayer Extends TEntity
 	' SetMPEffectFunc
 	Method SetMPEffectFunc(func() ) 
 		Self.mpEffectFunc = func
+	End Method
+	
+	' SetCharacterName
+	Method SetCharacterName(name:String)
+		Self.characterName = name
+	End Method
+	
+	' GetCharacterName
+	Method GetCharacterName:String()
+		Return Self.characterName
 	End Method
 	
 	' Update

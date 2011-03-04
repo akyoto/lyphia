@@ -148,6 +148,9 @@ Type TTextField Extends TWidget
 				Case 0
 					' Nothing
 					
+				Case KEY_ESCAPE
+					Self.UnFocus()
+					
 				Case KEY_ENTER
 					If Self.onEnterKey <> Null
 						' TODO: Remove this temporary bugfix
@@ -184,7 +187,7 @@ Type TTextField Extends TWidget
 					Self.InsertText(Chr(char))
 			End Select
 			
-			If char <> 0
+			If char <> 0 And char <> KEY_ESCAPE And char <> KEY_ENTER
 				' OnEdit handler
 				If Self.onEdit <> Null
 					' TODO: Remove this temporary bugfix

@@ -46,6 +46,15 @@ Type TParty
 		Return nEntity.GetParty() = Self
 	End Method
 	
+	' GetKillCount
+	Method GetKillCount:Int()
+		Local kills:Int = 0
+		For Local entity:TEntity = EachIn Self.members
+			kills :+ entity.GetKillCount()
+		Next
+		Return kills
+	End Method
+	
 	' GetByName
 	Method GetByName:TEntity(nName:String)
 		For Local entity:TEntity = EachIn Self.members

@@ -22,7 +22,7 @@ Type THurricane Extends TAirMagicInstance
 		Self.circlesDistance = 24
 		
 		' Per hit
-		Self.dmg = 20
+		Self.dmg = Rand(20, 25)
 	End Method
 	
 	' Run
@@ -221,7 +221,7 @@ Type TCleave Extends TAirMagicInstance
 		Self.x :+ CosFastSec(Self.degree) * 8
 		Self.y :- SinFastSec(Self.degree) * 8
 		
-		Self.dmg = Rand(20, 28)
+		Self.dmg = Rand(21, 38)
 		
 		TSwordSlash.Create(Self.caster, nCombo)
 	End Method

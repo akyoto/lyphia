@@ -35,9 +35,11 @@ Type TGameStateArena Extends TGameState
 	Field guiMutex:TMutex
 	Field menuContainer:TWidget
 	Field roomList:TTextField
+	Field charList:TListBox
 	Field joinButton:TButton
 	Field hostButton:TButton
 	Field roomContainer:TWidget
+	Field charContainer:TWidget
 	Field nameField:TTextField
 	Field chatField:TTextField
 	Field msgList:TListBox
@@ -83,10 +85,21 @@ Type TGameStateArena Extends TGameState
 	
 	' InitResources
 	Method InitResources()
+		' Load scripts
+		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/enemies/")
+		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/skills/")
+		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/scripts/")
+		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/characters/")
+		
 		' Load fonts
 		game.fontMgr.AddResourcesFromDirectory(FS_ROOT + "data/fonts/")
 		
 		' Load images
+		game.logger.Write("Loading skill images")
+		
+		game.imageMgr.SetFlags(MIPMAPPEDIMAGE | FILTEREDIMAGE)
+		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/skills/")
+		
 		game.imageMgr.SetFlags(FILTEREDIMAGE)
 		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/arena/")
 		
@@ -104,6 +117,7 @@ Type TGameStateArena Extends TGameState
 			Self.gui.Add(bg)
 			
 			Self.InitMenuGUI()
+			Self.InitCharacterGUI()
 			Self.InitRoomGUI()
 			
 			' Cursors
@@ -149,6 +163,28 @@ Type TGameStateArena Extends TGameState
 		Self.hostButton.SetSize(1.0, 0)
 		Self.hostButton.onClick = TGameStateArena.HostRoomFunc
 		Self.menuContainer.Add(Self.hostButton)
+	End Method
+	
+	' InitCharacterGUI
+	Method InitCharacterGUI()
+		' Main container
+		Self.charContainer = TWindow.Create("charContainer", "Character")
+		Self.charContainer.SetPosition(0.5, 0.8)
+		Self.charContainer.SetSizeAbs(200, 125)
+		Self.charContainer.SetPadding(5, 5, 5, 5)
+		Self.charContainer.UseCurrentAreaAsClientArea()
+		Self.charContainer.SetPositionAbs(-Self.charContainer.GetWidth() / 2, -Self.charContainer.GetHeight() / 2)
+		Self.gui.Add(Self.charContainer)
+		
+		' Char list
+		Self.charList = TListBox.Create("charList")
+		Self.charList.SetSize(1.0, 1.0)
+		Self.charContainer.Add(Self.charList)
+		
+		Self.charList.AddItem("Kimiko")
+		Self.charList.AddItem("Kyuji")
+		Self.charList.AddItem("Mystic")
+		Self.charList.AddItem("Zeyph")
 	End Method
 	
 	' InitRoomGUI
@@ -249,7 +285,7 @@ Type TGameStateArena Extends TGameState
 		' Change to GS InGame
 		If Self.startGame = True
 			Self.startGame = False
-			gsInGame.InitNetworkMode(gsArena.player, gsArena.parties, gsArena.room, gsArena.server)
+			gsInGame.InitNetworkMode(gsArena.player, gsArena.parties, gsArena.room, gsArena.server, gsArena.gui)
 			game.SetGameStateByName("InGame")
 		EndIf
 		
@@ -268,10 +304,12 @@ Type TGameStateArena Extends TGameState
 		Self.guiMutex.Lock()
 			If Self.server <> Null Or Self.room <> Null
 				Self.menuContainer.SetVisible(False)
+				Self.charContainer.SetVisible(False)
 				Self.roomContainer.SetVisible(True)
 				Self.gui.SetAlpha(0.75)
 			Else
 				Self.menuContainer.SetVisible(True)
+				Self.charContainer.SetVisible(True)
 				Self.roomContainer.SetVisible(False)
 				Self.gui.SetAlpha(1.0)
 			EndIf
@@ -284,13 +322,20 @@ Type TGameStateArena Extends TGameState
 		Try
 			Local host:String = nName
 			Local port:Short = TGameStateArena.SERVER_PORT
+			Local characterName:String
 			
 			game.logger.Write("Connecting to '" + host + "' at port " + port + " (room '" + nName + "')")
 			Self.room = TRoom.Create(host, port)
 			game.logger.Write("Successfully connected.")
 			
+			characterName = Self.charList.GetText()
+			If characterName = ""
+				characterName = Self.charList.GetItemText(0)
+			EndIf
+			
 			Self.room.streamMutex.Lock()
 				Self.room.stream.WriteByte(1)
+				Self.room.stream.WriteLine(characterName)
 				Self.room.stream.WriteLine(Self.nickName)
 			Self.room.streamMutex.Unlock()
 		Catch exception:Object
@@ -451,10 +496,11 @@ Type TServerFuncs
 	
 	' ClientJoined
 	Function ClientJoined(client:TLyphiaClient)
+		Local characterName:String = client.stream.ReadLine()
 		Local name:String = client.stream.ReadLine()
 		Local team:Byte = (gsArena.parties[0].GetNumberOfMembers() + gsArena.parties[1].GetNumberOfMembers()) Mod 2
 		
-		client.player = TPlayer.Create("")
+		client.player = TPlayer.Create(characterName)
 		client.player.SetName(name)
 		gsArena.parties[team].Add(client.player)
 		If name = gsArena.nickName
@@ -464,12 +510,13 @@ Type TServerFuncs
 		' Notify other players
 		client.server.clientListMutex.Lock()
 			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
-				' Inform existing clients about {Code + Player ID + Team number + Player name} of the new player
+				' Inform existing clients about {Code + Player ID + Team number + Player name + Character} of the new player
 				bcClient.streamMutex.Lock()
 					bcClient.stream.WriteByte(1)
 					bcClient.stream.WriteByte(client.player.GetID())
 					bcClient.stream.WriteByte(team)
 					bcClient.stream.WriteLine(name)
+					bcClient.stream.WriteLine(characterName)
 				bcClient.streamMutex.Unlock()
 				
 				' Tell the new player about the other clients who already joined the room
@@ -479,6 +526,7 @@ Type TServerFuncs
 						client.stream.WriteByte(bcClient.player.GetID())
 						client.stream.WriteByte(bcClient.player.GetParty() = gsArena.parties[1])
 						client.stream.WriteLine(bcClient.player.GetName())
+						client.stream.WriteLine(bcClient.player.GetCharacterName())
 					client.streamMutex.Unlock()
 				EndIf
 			Next
@@ -638,6 +686,7 @@ Type TClientFuncs
 		TClientMsgHandler.SetFunction(3, TClientFuncs.ClientList)
 		TClientMsgHandler.SetFunction(4, TClientFuncs.ChangeParty)
 		TClientMsgHandler.SetFunction(20, TClientFuncs.ChatMsg)
+		TClientMsgHandler.SetFunction(30, TClientFuncs.KillPlayer)
 		TClientMsgHandler.SetFunction(50, TClientFuncs.SetHP)
 		TClientMsgHandler.SetFunction(100, TClientFuncs.MovePlayer)
 		TClientMsgHandler.SetFunction(101, TClientFuncs.LockPlayerDirection)
@@ -658,9 +707,10 @@ Type TClientFuncs
 		Local playerID:Byte = room.stream.ReadByte()
 		Local team:Byte = room.stream.ReadByte()
 		Local name:String = room.stream.ReadLine()
+		Local characterName:String = room.stream.ReadLine()
 		
 		If gsArena.server = Null
-			Local player:TPlayer = TPlayer.Create("")
+			Local player:TPlayer = TPlayer.Create(characterName)
 			player.SetID(playerID)
 			player.SetName(name)
 			gsArena.parties[team].Add(player)
@@ -681,8 +731,9 @@ Type TClientFuncs
 		Local playerID:Byte = room.stream.ReadByte()
 		Local team:Byte = room.stream.ReadByte()
 		Local name:String = room.stream.ReadLine()
+		Local characterName:String = room.stream.ReadLine()
 		
-		Local player:TPlayer = TPlayer.Create("")
+		Local player:TPlayer = TPlayer.Create(characterName)
 		player.SetID(playerID)
 		player.SetName(name)
 		gsArena.parties[team].Add(player)
@@ -726,6 +777,29 @@ Type TClientFuncs
 		
 		gsArena.guiMutex.Lock()
 			gsArena.msgList.AddItem(nick + ": " + msg)
+			gsArena.msgList.ScrollToMax()
+		gsArena.guiMutex.Unlock()
+	End Function
+	
+	' KillPlayer
+	Function KillPlayer(room:TRoom)
+		Local killerID:Byte = room.stream.ReadByte()
+		Local killedID:Byte = room.stream.ReadByte()
+		Local kills:Short = room.stream.ReadShort()
+		Local deaths:Short = room.stream.ReadShort()
+		
+		Local killer:TPlayer = TPlayer.players[killerID]
+		Local killed:TPlayer = TPlayer.players[killedID]
+		
+		killer.SetKillCount(kills)
+		killed.SetDeathCount(deaths)
+		
+		gsArena.guiMutex.Lock()
+			If killer <> Null
+				gsArena.msgList.AddItem(killed.GetName() + " has been killed by " + killer.GetName() + ".")
+			Else
+				gsArena.msgList.AddItem(killed.GetName() + " has been killed.")
+			EndIf
 			gsArena.msgList.ScrollToMax()
 		gsArena.guiMutex.Unlock()
 	End Function

@@ -380,6 +380,11 @@ Type TWidget Abstract
 		' TODO: Implement GetRealViewport
 	End Method
 	
+	' GetFont
+	Method GetFont:TImageFont()
+		Return Self.font
+	End Method
+	
 	' GetMetaData
 	Method GetMetaData:Object()
 		Return Self.metaData
@@ -546,6 +551,7 @@ Type TWidget Abstract
 		Self.DrawEnd()
 		
 		' Scroll bar
+		' TODO: Remove hardcoded stuff
 		If Self.needsScrollBar
 			Local dragBarHeightRel:Float = Self.rHeight / Float(Self.rHeight + Self.scrollOffsetYMax)
 			
@@ -682,6 +688,11 @@ Type TWidget Abstract
 	Method Focus()
 		gui.newFocusWidget = Self
 		TGUI.logger.Write("Focus: " + Self.text)
+	End Method
+	
+	' UnFocus
+	Method UnFocus()
+		gui.newFocusWidget = Null
 	End Method
 	
 	' HasFocus

@@ -67,6 +67,13 @@ Type TEntity
 	
 	Field currentAnimation:TAnimation
 	
+	Field killCount:Int
+	Field deathCount:Int
+	
+	' Network
+	Field netHP:Float
+	Field netMP:Float
+	
 	' Party
 	Field party:TParty
 	Field partyLink:TLink
@@ -93,6 +100,7 @@ Type TEntity
 	
 	' Used for TEnemy
 	Field target:TEntity
+	Field killedBy:TEntity
 	Field isPlayerFlag:Int
 	
 	' Init
@@ -281,6 +289,16 @@ Type TEntity
 		Return Self.name
 	End Method
 	
+	' GetKillCount
+	Method GetKillCount:Int()
+		Return Self.killCount
+	End Method
+	
+	' GetDeathCount
+	Method GetDeathCount:Int()
+		Return Self.deathCount
+	End Method
+	
 	' GetParty
 	Method GetParty:TParty()
 		Return Self.party
@@ -319,6 +337,16 @@ Type TEntity
 	' GetY2
 	Method GetY2:Int()
 		Return Self.y + Self.img.height
+	End Method
+	
+	' SetKillCount
+	Method SetKillCount(kills:Int)
+		Self.killCount = kills
+	End Method
+	
+	' SetDeathCount
+	Method SetDeathCount(deaths:Int)
+		Self.deathCount = deaths
 	End Method
 	
 	' SetDirectionLock
@@ -479,18 +507,21 @@ Type TEntity
 	End Method
 	
 	' LoseHP
-	Method LoseHP(amount:Float)
+	Method LoseHP(amount:Float, caster:TEntity = Null)
 		Self.hp:-amount
 		
 		If Self.hp <= 0
+			' Register kill
+			If Self.killedBy = Null
+				Self.killedBy = caster
+				
+				caster.SetKillCount(caster.GetKillCount() + 1)
+				Self.SetDeathCount(Self.GetDeathCount() + 1)
+			EndIf
+			
 			Self.hp = 0
 			Self.Die()
 		EndIf
-	End Method
-	
-	' LoseHP
-	Method LoseHPBy(amount:Float, caster:TEntity)
-		Self.LoseHP(amount)
 		
 		If Self.target = Null
 			Self.target = caster

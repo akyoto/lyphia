@@ -34,6 +34,7 @@ Type TListBox Extends TWidget
 		item.SetPadding(5, 0, 5, 0)
 		
 		Local label:TLabel = TLabel.Create(item.id + "_label", nText, 0, 0)
+		label.SetFont(Self.font)
 		label.Dock(TWidget.DOCK_LEFT)
 		item.Add(label)
 		
@@ -219,6 +220,13 @@ Type TListBox Extends TWidget
 		Next
 	End Method
 	End Rem
+	
+	' OnFontChange
+	Method OnFontChange()
+		For Local widget:TWidget = EachIn Self.GetChildsList()
+			widget.SetFontAll(Self.GetFont())
+		Next
+	End Method
 	
 	' Rearrange
 	Method Rearrange()

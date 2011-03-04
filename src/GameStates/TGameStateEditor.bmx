@@ -143,7 +143,9 @@ Type TGameStateEditor Extends TGameState
 	Method InitResources()
 		' Load scripts
 		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/enemies/")
+		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/skills/")
 		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/scripts/")
+		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/characters/")
 		
 		' Load fonts
 		game.fontMgr.AddResourcesFromDirectory(FS_ROOT + "data/fonts/")
@@ -165,6 +167,9 @@ Type TGameStateEditor Extends TGameState
 	
 	' InitEngine
 	Method InitEngine()
+		Local tileWindowTilesX:Int = 10
+		Local tileWindowTilesY:Int = 6
+		
 		' TileMap
 		Self.map = TTileMap.Create()
 		Self.map.LoadINI(FS_ROOT + "data/layers/tilemap.ini")
@@ -197,8 +202,8 @@ Type TGameStateEditor Extends TGameState
 				EndIf
 			Next
 			
-			Self.tileWindow.SetSizeAbs(Self.map.GetTileSizeX() * 6, Self.map.GetTileSizeY() * 5)
-			currentContainer.ApplyLayoutTable(5, 6, True)
+			Self.tileWindow.SetSizeAbs(Self.map.GetTileSizeX() * tileWindowTilesX, Self.map.GetTileSizeY() * tileWindowTilesY)
+			currentContainer.ApplyLayoutTable(tileWindowTilesY, tileWindowTilesX, True)
 			currentContainer.SetVisible(layer = 1)
 			Self.tileWindow.Add(currentContainer)
 		Next

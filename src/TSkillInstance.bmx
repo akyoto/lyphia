@@ -61,7 +61,7 @@ Type TSkillInstance
 				If enemy <> Null
 					If RectInRect(x, y, width, height, enemy.x, enemy.y, enemy.img.width, enemy.img.height)
 						' Damage
-						enemy.LoseHPBy(Self.dmg, Self.caster)
+						enemy.LoseHP(Self.dmg, Self.caster)
 						TDamageView.Create(Self.dmg, enemy.GetMidX() + Rand(- 12, 12), enemy.GetY() - Rand(0, 16) + TDamageView.dmgNumYOffset)
 						
 						Self.target = enemy
@@ -82,7 +82,7 @@ Type TSkillInstance
 				For enemy = EachIn party.GetMembersList()
 					If RectInRect(x, y, width, height, enemy.x, enemy.y, enemy.img.width, enemy.img.height)
 						' Damage
-						enemy.LoseHPBy(Self.dmg, Self.caster)
+						enemy.LoseHP(Self.dmg, Self.caster)
 						TDamageView.Create(Self.dmg, enemy.GetMidX() + Rand(- 12, 12), enemy.GetY() - Rand(0, 16) + TDamageView.dmgNumYOffset)
 						
 						Self.target = enemy
@@ -97,7 +97,7 @@ Type TSkillInstance
 			Local ctarget:TEntity = Self.caster.target
 			If RectInRect(x, y, width, height, ctarget.x, ctarget.y, ctarget.img.width, ctarget.img.height)
 				' Damage
-				ctarget.LoseHPBy(Self.dmg, Self.caster)
+				ctarget.LoseHP(Self.dmg, Self.caster)
 				TDamageView.Create(Self.dmg, ctarget.GetMidX() + Rand(- 12, 12), ctarget.GetY() - Rand(0, 16) + TDamageView.dmgNumYOffset, True)
 				
 				Self.target = ctarget
@@ -120,7 +120,7 @@ Type TSkillInstance
 				If enemy <> Null
 					If CircleInRect(x, y, radius, enemy.x, enemy.y, enemy.img.width, enemy.img.height)
 						' Damage
-						enemy.LoseHPBy(Self.dmg, Self.caster)
+						enemy.LoseHP(Self.dmg, Self.caster)
 						TDamageView.Create(Self.dmg, enemy.GetMidX() + Rand(- 12, 12), enemy.GetY() - Rand(0, 16) + TDamageView.dmgNumYOffset)
 						
 						Self.target = enemy
@@ -141,7 +141,7 @@ Type TSkillInstance
 				For enemy = EachIn party.GetMembersList()
 					If CircleInRect(x, y, radius, enemy.x, enemy.y, enemy.img.width, enemy.img.height)
 						' Damage
-						enemy.LoseHPBy(Self.dmg, Self.caster)
+						enemy.LoseHP(Self.dmg, Self.caster)
 						TDamageView.Create(Self.dmg, enemy.GetMidX() + Rand(- 12, 12), enemy.GetY() - Rand(0, 16) + TDamageView.dmgNumYOffset)
 						
 						Self.target = enemy
@@ -157,7 +157,7 @@ Type TSkillInstance
 			Local ctarget:TEntity = Self.caster.target
 			If CircleInRect(x, y, radius, ctarget.x, ctarget.y, ctarget.img.width, ctarget.img.height)
 				' Damage
-				ctarget.LoseHPBy(Self.dmg, Self.caster)
+				ctarget.LoseHP(Self.dmg, Self.caster)
 				TDamageView.Create(Self.dmg, ctarget.GetMidX() + Rand(- 12, 12), ctarget.GetY() - Rand(0, 16) + TDamageView.dmgNumYOffset, True)
 				
 				Self.target = ctarget

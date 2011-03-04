@@ -80,6 +80,9 @@ Type TGameStateInGame Extends TGameState
 	Field guiFontTitle:TImageFont
 	Field dmgFont:TImageFont
 	Field regionPreviewFont:TImageFont
+	Field playerTitleFont:TImageFont
+	Field inGameChatFont:TImageFont
+	
 	Field skillView:TContainer
 	Field skillCastBar:TProgressBar
 	Field buffView:TWidget
@@ -110,6 +113,7 @@ Type TGameStateInGame Extends TGameState
 	Field parties:TParty[]
 	Field room:TRoom
 	Field server:TServer
+	Field arenaGUI:TGUI
 	
 	Field netWalkX:Byte
 	Field netWalkY:Byte
@@ -145,11 +149,10 @@ Type TGameStateInGame Extends TGameState
 		game.logger.Write("Initializing player")
 		
 		If Self.inNetworkMode = False
-			Self.player = TPlayer.Create("")
-			Self.player.SetName("Test01")
+			Self.player = TPlayer.Create("Zeyph")
 			
 			Self.parties = New TParty[1]
-			Self.parties[0] = TParty.Create("TestParty")
+			Self.parties[0] = TParty.Create("My party")
 			Self.parties[0].Add(Self.player)
 		Else
 			Self.netWalkX = 0
@@ -205,103 +208,10 @@ Type TGameStateInGame Extends TGameState
 		' Tech slots
 		game.logger.Write("Setting up skill slots")
 		
-		For Local party:TParty = EachIn Self.parties
-			For Local player:TPlayer = EachIn party.GetMembersList()
-				player.SetSpeed(0.2)
-				
-				Local index:Int = 0
-				
-				player.techSlots[index] = TSlot.Create(SSwordSlash.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_1))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(0))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SFireBall.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_2))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(1))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SThunderSphere.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_3))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(2))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SIcyRays.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_4))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(3))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SMeteor.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_5))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(4))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SIceWave.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_6))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(5))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SIcyFlames.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_7))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(6))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SRecovery.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_8))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(7))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SChainLightning.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_Q))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(8, True))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SHealingWind.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_W))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(8))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SMeteorRain.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_E))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(9))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SCleave.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_F))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(10))
-				EndIf
-				index :+ 1
-				
-				player.techSlots[index] = TSlot.Create(SHurricane.Create(player))
-				If player = Self.player Then
-					player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_G))
-					player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(11))
-				EndIf
-				index :+ 1
-			Next
+		' Set up triggers
+		For Local index:Int = 0 Until Self.player.techSlots.length
+			Self.player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_1 + index))
+			Self.player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(index))
 		Next
 		
 		' GUI
@@ -344,6 +254,7 @@ Type TGameStateInGame Extends TGameState
 		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/enemies/")
 		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/skills/")
 		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/scripts/")
+		game.scriptMgr.AddResourcesFromDirectory(FS_ROOT + "data/characters/")
 		
 		game.logger.Write("Loading skill images")
 		game.imageMgr.SetFlags(MIPMAPPEDIMAGE | FILTEREDIMAGE)
@@ -371,6 +282,8 @@ Type TGameStateInGame Extends TGameState
 		Self.guiFontTitle = game.fontMgr.Get("GUITitleFont")
 		Self.dmgFont = game.fontMgr.Get("DamageFont")
 		Self.regionPreviewFont = game.fontMgr.Get("RegionFont")
+		Self.playerTitleFont = game.fontMgr.Get("PlayerTitleFont")
+		Self.inGameChatFont = game.fontMgr.Get("InGameChatFont")
 		
 		' Particles
 		Self.particleImg = game.imageMgr.Get("particle-main")
@@ -465,16 +378,33 @@ Type TGameStateInGame Extends TGameState
 		' Apply font to all widgets
 		Self.gui.SetFont(Self.guiFont)
 		
+		' Network mode
+		If Self.inNetworkMode
+			Local msgList:TWidget = Self.arenaGUI.GetRoot().GetChild("roomContainer").GetChild("msgList")
+			msgList.SetAlpha(0.5)
+			msgList.SetFont(Self.inGameChatFont)
+			msgList.SetSize(0, 0)
+			msgList.SetSizeAbs(300, 100)
+			msgList.SetPosition(0, 1)
+			msgList.SetPositionAbs(5, -(100 + 5 + 48))
+			Self.gui.Add(msgList)
+			
+			msgList.UpdatePosition()
+			msgList.UpdateScreenPosition()
+			msgList.Update()
+		EndIf
+		
 		' Fonts
 		'Self.infoWindow.SetFont(Self.guiFontTitle)
 	End Method
 	
 	' InitNetworkMode
-	Method InitNetworkMode(nPlayer:TPlayer, nParties:TParty[], nRoom:TRoom, nServer:TServer)
+	Method InitNetworkMode(nPlayer:TPlayer, nParties:TParty[], nRoom:TRoom, nServer:TServer, nArenaGUI:TGUI)
 		Self.player = nPlayer
 		Self.room = nRoom
 		Self.server = nServer
 		Self.parties = nParties
+		Self.arenaGUI = nArenaGUI
 		
 		Self.inNetworkMode = True
 	End Method
@@ -499,6 +429,9 @@ Type TGameStateInGame Extends TGameState
 		
 		' Update frame rate
 		Self.frameCounter.Update()
+		
+		' GUI update
+		Self.gui.Update()
 		
 		' Input
 		Self.UpdateInput()
@@ -1068,19 +1001,45 @@ Type TGameStateInGame Extends TGameState
 	' UpdateArena
 	Method UpdateArena()
 		If Self.server <> Null
-			If MilliSecs() - Self.lastArenaUpdate > 500
+			If MilliSecs() - Self.lastArenaUpdate > 250
 				Self.server.clientListMutex.Lock()
-					' Send all clients except myself...
-					For Local client:TLyphiaClient = EachIn Self.server.clientList
-						If client.player <> Self.player
-							client.streamMutex.Lock()
-								' ...data about all players
-								For Local bcClient:TLyphiaClient = EachIn Self.server.clientList
-									client.stream.WriteByte(50)
-									client.stream.WriteByte(bcClient.player.GetID())
-									client.stream.WriteFloat(bcClient.player.hp)
-								Next
-							client.streamMutex.Unlock()
+					' Data about all players...
+					Local player:TPlayer
+					For Local bcClient:TLyphiaClient = EachIn Self.server.clientList
+						player = bcClient.player
+						
+						' Kill
+						If player.killedBy <> Null
+							' Send all clients
+							For Local client:TLyphiaClient = EachIn Self.server.clientList
+								client.streamMutex.Lock()
+									client.stream.WriteByte(30)
+									client.stream.WriteByte(TPlayer(player.killedBy).GetID())
+									client.stream.WriteByte(player.GetID())
+									client.stream.WriteByte(player.killedBy.GetKillCount())
+									client.stream.WriteByte(player.GetDeathCount())
+								client.streamMutex.Unlock()
+							Next
+							
+							player.hp = player.maxHP
+							player.mp = player.maxMP
+							player.killedBy = Null
+						EndIf
+						
+						' HP update
+						If player.hp <> player.netHP
+							' Send all clients except myself
+							For Local client:TLyphiaClient = EachIn Self.server.clientList
+								If client.player <> Self.player
+									client.streamMutex.Lock()
+										client.stream.WriteByte(50)
+										client.stream.WriteByte(player.GetID())
+										client.stream.WriteFloat(player.hp)
+									client.streamMutex.Unlock()
+								EndIf
+							Next
+							
+							player.netHP = player.hp
 						EndIf
 					Next
 				Self.server.clientListMutex.Unlock()
@@ -1357,6 +1316,7 @@ Type TGameStateInGame Extends TGameState
 					' Draw nickname
 					If gsInGame.inNetworkMode
 						.SetColor 0, 0, 0
+						.SetImageFont gsInGame.playerTitleFont
 						DrawTextCentered player.GetName(), player.GetMidX(), player.GetY() - 24
 						player.DrawHPAndMP()
 					EndIf

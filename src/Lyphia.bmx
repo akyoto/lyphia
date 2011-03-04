@@ -12,7 +12,10 @@ Rem
 End Rem
 
 ' TODO
+' * Fix msg list (TListBox)
 ' * SeedRnd set by host in network mode
+' * Custom autotiles
+' * Fix arena bugs (leaving / joining rooms)
 
 ' Strict
 SuperStrict
