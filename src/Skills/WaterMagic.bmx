@@ -175,7 +175,7 @@ Type TIcyRays Extends TWaterMagicInstance
 	
 	' OnHit
 	Method OnHit:Int()
-		TImmobilizationDeBuff.Create(Self.caster, Self.target, 3000)
+		TSlowDeBuff.Create(Self.caster, Self.target, 5000, 0.1)
 		Self.Remove()
 		Return True
 	End Method

@@ -122,10 +122,11 @@ Type TRecoveryBuff Extends TBuff
 	
 	' Init
 	Method Init(nCaster:TEntity, nTarget:TEntity, nLifeTime:Int, nHeal:Int, nHealInterval:Int)
-		Super.InitBuff(nCaster, nTarget, nLifeTime)
 		Self.heal = nHeal
 		Self.healInterval = nHealInterval
 		Self.lastHeal = 0
+		
+		Super.InitBuff(nCaster, nTarget, nLifeTime)
 	End Method
 	
 	' GetName
@@ -177,8 +178,6 @@ End Type
 
 ' TImmobilizationDeBuff
 Type TImmobilizationDeBuff Extends TBuff
-	Field targetBaseSpeed:Float
-	
 	' Init
 	Method Init(nCaster:TEntity, nTarget:TEntity, nLifeTime:Int)
 		Super.InitBuff(nCaster, nTarget, nLifeTime)
@@ -222,3 +221,51 @@ Type TImmobilizationDeBuff Extends TBuff
 	End Function
 End Type
 
+' TSlowDeBuff
+Type TSlowDeBuff Extends TBuff
+	Field slowFactor:Float
+	
+	' Init
+	Method Init(nCaster:TEntity, nTarget:TEntity, nLifeTime:Int, nSlowFactor:Float)
+		Self.slowFactor = nSlowFactor
+		
+		Super.InitBuff(nCaster, nTarget, nLifeTime)
+	End Method
+	
+	' GetName
+	Method GetName:String()
+		Return "Slow"
+	End Method
+	
+	' GetDescription
+	Method GetDescription:String()
+		Return "Slows the target by " + Int(Self.slowFactor * 100) + " % for " + Self.lifeTime / 1000.0 + " seconds."
+	End Method
+	
+	' OnBegin
+	Method OnBegin()
+		Self.target.AddSpeedMultiplier(-Self.slowFactor)
+	End Method
+	
+	' OnFrame
+	Method OnFrame()
+		
+	End Method
+		
+	' OnEnd
+	Method OnEnd()
+		Self.target.AddSpeedMultiplier(Self.slowFactor)
+	End Method
+	
+	' IsDebuff
+	Method IsDebuff:Int()
+		Return True
+	End Method
+	
+	' Create
+	Function Create:TSlowDeBuff(nCaster:TEntity, nTarget:TEntity, nLifeTime:Int, nSlowFactor:Float)
+		Local buff:TSlowDeBuff = New TSlowDeBuff
+		buff.Init(nCaster, nTarget, nLifeTime, nSlowFactor)
+		Return buff
+	End Function
+End Type
