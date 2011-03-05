@@ -196,7 +196,7 @@ Type TImmobilizationDeBuff Extends TBuff
 	
 	' OnBegin
 	Method OnBegin()
-		'Self.target.AddSpeedMultiplier(-1.0)
+		Self.target.AddSpeedMultiplier(-1.0)
 	End Method
 	
 	' OnFrame
@@ -206,7 +206,7 @@ Type TImmobilizationDeBuff Extends TBuff
 		
 	' OnEnd
 	Method OnEnd()
-		'Self.target.AddSpeedMultiplier(1.0)
+		Self.target.AddSpeedMultiplier(1.0)
 	End Method
 	
 	' IsDebuff

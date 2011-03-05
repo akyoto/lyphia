@@ -257,6 +257,12 @@ Type TEntity
 		Self.OnSpeedChange()
 	End Method
 	
+	' AddSpeedMultiplier
+	Method AddSpeedMultiplier(nSpeedMultiplier:Float)
+		Self.speedMultiplier :+ nSpeedMultiplier
+		Self.OnSpeedChange()
+	End Method
+	
 	' SetBaseSpeed
 	Method SetBaseSpeed(nSpeed:Float)
 		Self.baseSpeed = nSpeed
@@ -614,6 +620,10 @@ Type TEntity
 	' OnSpeedChange
 	Method OnSpeedChange()
 		Self.speed = Self.baseSpeed * Self.speedMultiplier
+		
+		If Self.speed < 0
+			Self.speed = 0
+		EndIf
 		
 		If Self.speed <> 0
 			Self.animWalk.SetFrameDuration(15 / Self.speed)
