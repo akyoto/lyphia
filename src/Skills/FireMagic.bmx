@@ -59,6 +59,7 @@ Type TFireBall Extends TFireMagicInstance
 	
 	' OnHit
 	Method OnHit:Int()
+		TBurnDeBuff.Create(Self.caster, Self.target, 6000, 5, 2000)
 		Self.Remove()
 		Return True
 	End Method
@@ -227,6 +228,7 @@ Type TMeteor Extends TFireMagicInstance
 	
 	' OnHit
 	Method OnHit:Int()
+		TBurnDeBuff.Create(Self.caster, Self.target, 9000, 8, 3000)
 		'Self.Remove()
 		Return True
 	End Method
