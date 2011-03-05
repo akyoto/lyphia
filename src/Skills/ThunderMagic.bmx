@@ -300,7 +300,8 @@ Type TSoulStrike Extends TThunderMagicInstance
 				..
 			)
 		Next
-' Collision
+		
+		' Collision
 		Self.CheckRectCollision(Self.x - 3, Self.y - 3, 6, 6)
 	End Method
 	

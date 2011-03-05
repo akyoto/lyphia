@@ -130,6 +130,130 @@ Type SFireBall Extends TFireMagic
 	End Function
 End Type
 
+' TFireBreath
+Type TFireBreath Extends TFireMagicInstance
+	Field degree:Int
+	Field lastHit:Int
+	
+	' Init
+	Method Init(castedBy:TEntity)
+		Super.InitInstance(castedBy)
+		
+		Self.maxRunTime = 1000
+		
+		Self.dmg = Rand(2, 4)
+	End Method
+	
+	' Run
+	Method Run()
+		If Self.GetRunTime() > Self.maxRunTime
+			Self.Remove()
+		EndIf
+		
+		Self.degree = Self.caster.GetDegree()
+		
+		Self.x = Self.caster.GetMidX() + CosFastSec(Self.degree) * 4
+		Self.y = Self.caster.GetMidY() - SinFastSec(Self.degree) * 4 - 5
+		
+		Local pDegree:Int
+		For Local i:Int = 0 To game.speed / 8
+			pDegree = Rand(Self.degree - 20, Self.degree + 20)
+			TParticleTween.Create(..
+				gsInGame.GetEffectGroup(Self.y),  ..		' Effect group
+				250,..							' Life time
+				gsInGame.particleImgFire,..				' Image
+				Self.x, Self.y,  ..					' Start position
+				Self.x + CosFastSec(pDegree) * 100, Self.y - SinFastSec(pDegree) * 100,  ..	' End position
+				0.4, 0.01,..							' Alpha
+				0, 360,..							' Rotation
+				0.5, 0.75,..						' Scale X (start, end)
+				0.5, 0.75,..						' Scale Y (start, end)
+				255, 0, 0,..						' Color (start)
+				220, 200, 0..							' Color (end)
+			)
+		Next
+		
+		' Collision
+		If MilliSecs() - Self.lastHit >= 250
+			Self.CheckCircleCollision(Self.x, Self.y, 100)
+			Self.lastHit = MilliSecs()
+		EndIf
+		'Self.CheckCircleArcCollision(Self.x, Self.y, 100, Self.degree - 20, Self.degree + 20)
+	End Method
+	
+	' OnHit
+	Method OnHit:Int()
+		TBurnDeBuff.Create(Self.caster, Self.target, 12000, 10, 3000)
+		'Self.Remove()
+		Return True
+	End Method
+	
+	' Create
+	Function Create:TFireBreath(castedBy:TEntity)
+		Local skill:TFireBreath = New TFireBreath
+		skill.Init(castedBy)
+		Return skill
+	End Function
+End Type
+
+' SFireBreath
+Type SFireBreath Extends TFireMagic
+	' Init
+	Method Init(nCaster:TEntity) 
+		Super.Init(nCaster)
+	End Method
+	
+	' Cast
+	Method Cast()
+		Self.caster.Cast(Self)
+		
+		Local pDegree:Int
+		For Local i:Int = 0 To game.speed / 8
+			pDegree = Rand(0, 359)
+			TParticleTween.Create(..
+				gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..
+				250,..
+				gsInGame.particleImg,..
+				Self.caster.GetMidX(), Self.caster.GetMidY(),  ..
+				Self.caster.GetMidX() + CosFast[pDegree] * Rand(5, 10), Self.caster.GetMidY() + SinFast[pDegree] * Rand(5, 10),  ..
+				0.5, 0.1,..
+				0, 360,..
+				0.5, 0.75,..
+				0.5, 0.75,..
+				255, 0, 0,..
+				192, 180, 160..
+				..
+			)
+		Next
+	End Method
+	
+	' Use
+	Method Use()
+		gsInGame.chanEffects.Play("FireBreath")
+		
+		TFireBreath.Create(Self.caster)
+	End Method
+	
+	' GetName
+	Method GetName:String() 
+		' TODO: Localization
+		Return "Fire Breath"
+	End Method
+	
+	' GetDescription
+	Method GetDescription:String() 
+		' TODO: Localization
+		Return "Summons a fire breath in front of you."
+	End Method
+	
+	' Create
+	Function Create:TSkill(nCaster:TEntity)
+		Local skill:TSkill = New SFireBreath
+		skill.Init(nCaster)
+		Return skill
+	End Function
+End Type
+
 ' TMeteor
 Type TMeteor Extends TFireMagicInstance
 	Field explosionRadius:Int
