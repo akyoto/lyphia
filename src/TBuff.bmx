@@ -122,7 +122,7 @@ Type TRecoveryBuff Extends TBuff
 	
 	' Init
 	Method Init(nCaster:TEntity, nTarget:TEntity, nLifeTime:Int, nHeal:Int, nHealInterval:Int)
-		Self.InitBuff(nCaster, nTarget, nLifeTime)
+		Super.InitBuff(nCaster, nTarget, nLifeTime)
 		Self.heal = nHeal
 		Self.healInterval = nHealInterval
 		Self.lastHeal = 0
@@ -174,3 +174,51 @@ Type TRecoveryBuff Extends TBuff
 		Return buff
 	End Function
 End Type
+
+' TImmobilizationDeBuff
+Type TImmobilizationDeBuff Extends TBuff
+	Field targetBaseSpeed:Float
+	
+	' Init
+	Method Init(nCaster:TEntity, nTarget:TEntity, nLifeTime:Int)
+		Super.InitBuff(nCaster, nTarget, nLifeTime)
+	End Method
+	
+	' GetName
+	Method GetName:String()
+		Return "Immobilization"
+	End Method
+	
+	' GetDescription
+	Method GetDescription:String()
+		Return "Immobilizes the target for " + Self.lifeTime / 1000.0 + " seconds."
+	End Method
+	
+	' OnBegin
+	Method OnBegin()
+		'Self.target.AddSpeedMultiplier(-1.0)
+	End Method
+	
+	' OnFrame
+	Method OnFrame()
+		
+	End Method
+		
+	' OnEnd
+	Method OnEnd()
+		'Self.target.AddSpeedMultiplier(1.0)
+	End Method
+	
+	' IsDebuff
+	Method IsDebuff:Int()
+		Return True
+	End Method
+	
+	' Create
+	Function Create:TImmobilizationDeBuff(nCaster:TEntity, nTarget:TEntity, nLifeTime:Int)
+		Local buff:TImmobilizationDeBuff = New TImmobilizationDeBuff
+		buff.Init(nCaster, nTarget, nLifeTime)
+		Return buff
+	End Function
+End Type
+

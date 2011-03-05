@@ -4,7 +4,7 @@ function init()
 	super.LoadConfigFile("Kimiko.ini")
 	
 	super.InitStatus(1, 1000, 450)
-	super.SetSpeed(0.2)
+	super.SetBaseSpeed(0.2)
 	
 	super.CreateSkillSlots(4)
 	

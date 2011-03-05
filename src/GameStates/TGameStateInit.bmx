@@ -104,19 +104,22 @@ Type TGameStateInit Extends TGameState
 		game.networkThreadDelay = Int(Self.ini.Get("Network", "ThreadDelay"))
 		
 		' Joysticks
-		game.countGamePads = JoyCount()
-		game.logger.Write("Number of gamepads: " + game.countGamePads)
-		If game.countGamePads > 0
-			game.logger.Write(TLog.separator)
-			For Local i:Int = 0 Until game.countGamePads
-				game.logger.Write("GamePad [" + (i + 1) +"]:")
-				game.logger.Write(" * Name:       " + JoyName(i))
-				game.logger.Write(" * AxisCaps:   " + Bin(JoyAxisCaps(i)))
-				game.logger.Write(" * ButtonCaps: " + Bin(JoyButtonCaps(i)))
-				game.logger.Write(" * X:          " + JoyX(i))
-				game.logger.Write(" * Y:          " + JoyY(i))
+		Local joyCountVal:Int = JoyCount()
+		If joyCountVal <> TInputSystem.countGamePads
+			TInputSystem.countGamePads = joyCountVal
+			game.logger.Write("Number of gamepads: " + TInputSystem.countGamePads)
+			If TInputSystem.countGamePads > 0
 				game.logger.Write(TLog.separator)
-			Next
+				For Local i:Int = 0 Until TInputSystem.countGamePads
+					game.logger.Write("GamePad [" + (i + 1) +"]:")
+					game.logger.Write(" * Name:       " + JoyName(i))
+					game.logger.Write(" * AxisCaps:   " + Bin(JoyAxisCaps(i)))
+					game.logger.Write(" * ButtonCaps: " + Bin(JoyButtonCaps(i)))
+					game.logger.Write(" * X:          " + JoyX(i))
+					game.logger.Write(" * Y:          " + JoyY(i))
+					game.logger.Write(TLog.separator)
+				Next
+			EndIf
 		EndIf
 		
 		' System info

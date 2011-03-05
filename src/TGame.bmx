@@ -48,7 +48,6 @@ Type TGame
 	Field fullscreen:Int
 	Field driver:String
 	Field audioDriver:String
-	Field countGamePads:Int
 	Field vsync:Int
 	
 	' Network

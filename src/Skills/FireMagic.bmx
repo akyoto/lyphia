@@ -255,7 +255,7 @@ Type SMeteor Extends TFireMagic
 	Method Use()
 		gsInGame.chanEffects.Play("Meteor")
 		
-		' Calculate X, Y
+		' Calculate X, Y offset
 		Local x:Int, y:Int
 		Local degree:Int = Self.caster.GetDegree()
 		x = CosFastSec(degree) * 200

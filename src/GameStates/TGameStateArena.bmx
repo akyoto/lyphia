@@ -108,25 +108,27 @@ Type TGameStateArena Extends TGameState
 	
 	' InitGUI
 	Method InitGUI()
-		Self.guiMutex = CreateMutex()
-		Self.guiMutex.Lock()
-			Self.gui = TGUI.Create()
-			
-			Local bg:TImageBox = TImageBox.Create("arenaBG", game.imageMgr.Get("arena-background"))
-			bg.SetSize(1.0, 1.0)
-			Self.gui.Add(bg)
-			
-			Self.InitMenuGUI()
-			Self.InitCharacterGUI()
-			Self.InitRoomGUI()
-			
-			' Cursors
-			Self.gui.SetCursor("default")
-			HideMouse()
-			
-			' Apply font to all widgets
-			Self.gui.SetFont(Self.guiFont)
-		Self.guiMutex.Unlock()
+		If Self.gui = Null
+			Self.guiMutex = CreateMutex()
+			Self.guiMutex.Lock()
+				Self.gui = TGUI.Create()
+				
+				Local bg:TImageBox = TImageBox.Create("arenaBG", game.imageMgr.Get("arena-background"))
+				bg.SetSize(1.0, 1.0)
+				Self.gui.Add(bg)
+				
+				Self.InitMenuGUI()
+				Self.InitCharacterGUI()
+				Self.InitRoomGUI()
+				
+				' Cursors
+				Self.gui.SetCursor("default")
+				HideMouse()
+				
+				' Apply font to all widgets
+				Self.gui.SetFont(Self.guiFont)
+			Self.guiMutex.Unlock()
+		EndIf
 	End Method
 	
 	' InitMenuGUI
@@ -184,7 +186,7 @@ Type TGameStateArena Extends TGameState
 		Self.charList.AddItem("Kimiko")
 		Self.charList.AddItem("Kyuji")
 		Self.charList.AddItem("Mystic")
-		Self.charList.AddItem("Zeyph")
+		Self.charList.AddItem("Zeypher")
 	End Method
 	
 	' InitRoomGUI
@@ -577,7 +579,7 @@ Type TServerFuncs
 			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
 				bcClient.streamMutex.Lock()
 					bcClient.stream.WriteByte(20)
-					bcClient.stream.WriteLine(client.player.GetName())
+					bcClient.stream.WriteByte(client.player.GetID())
 					bcClient.stream.WriteLine(msg)
 				bcClient.streamMutex.Unlock()
 			Next
@@ -781,8 +783,10 @@ Type TClientFuncs
 	
 	' ChatMsg
 	Function ChatMsg(room:TRoom)
-		Local nick:String = room.stream.ReadLine()
+		Local playerID:Byte = room.stream.ReadByte()
 		Local msg:String = room.stream.ReadLine()
+		
+		Local nick:String = TPlayer.players[playerID].GetName()
 		
 		gsArena.guiMutex.Lock()
 			gsArena.msgList.AddItem(nick + ": " + msg)

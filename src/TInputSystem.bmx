@@ -171,7 +171,7 @@ Type TJoyHatTrigger Extends TTrigger
 	
 	' Triggered
 	Method Triggered:Int()
-		If JoyCount() = 0
+		If TInputSystem.countGamePads = 0
 			Return False
 		EndIf
 		
@@ -208,6 +208,8 @@ End Type
 Type TInputSystem
 	Const MAX_MOUSE_BUTTONS:Int = 3
 	Const MAX_KEYS:Int = 256
+	
+	Global countGamePads:Int = 0
 	
 	Global mx:Int, my:Int, mz:Int
 	Global mxs:Int, mys:Int, mzs:Int

@@ -152,7 +152,7 @@ Type TGameStateInGame Extends TGameState
 		game.logger.Write("Initializing player")
 		
 		If Self.inNetworkMode = False
-			Self.player = TPlayer.Create("Kimiko")
+			Self.player = TPlayer.Create("Mystic")
 			
 			Self.parties = New TParty[1]
 			Self.parties[0] = TParty.Create("My party")

@@ -1,10 +1,10 @@
 function init()
-	super.SetCharacterName("Zeyph")
-	super.SetImageFile("Zeyph.png")
-	super.LoadConfigFile("Zeyph.ini")
+	super.SetCharacterName("Zeypher")
+	super.SetImageFile("Zeypher.png")
+	super.LoadConfigFile("Zeypher.ini")
 	
 	super.InitStatus(1, 1000, 450)
-	super.SetSpeed(0.2)
+	super.SetBaseSpeed(0.2)
 	
 	super.CreateSkillSlots(4)
 	

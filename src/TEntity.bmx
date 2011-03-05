@@ -62,7 +62,10 @@ Type TEntity
 	
 	Field img:TImage
 	
-	Field speed:Float
+	Field baseSpeed:Float
+	Field speedMultiplier:Float
+	Field speed:Float ' Cache
+	
 	Field directionLocked:Int
 	
 	Field currentAnimation:TAnimation
@@ -117,15 +120,16 @@ Type TEntity
 		Self.buffs = TBuffContainer.Create()
 		Self.debuffs = TBuffContainer.Create()
 		
-		' Direction
-		Self.SetDirectionLock(False)
-		
 		' Lua
 		If luaFile.Length > 0
 			Self.luaScript = game.scriptMgr.Get(luaFile)
 			Self.luaObject = Self.luaScript.CreateInstance(Self)
 			Self.luaObject.Invoke("init", Null)
 		EndIf
+		
+		' Direction
+		Self.SetDirectionLock(False)
+		Self.SetSpeedMultiplier(1.0)
 	End Method
 	
 	' InitStatus
@@ -145,150 +149,26 @@ Type TEntity
 		
 		' Particle groups
 		Self.grpWeaponEffects = TParticleGroup.Create()
-		
-		Self.SetSpeed(0.2)
-	End Method
-	
-	' IsPlayer
-	Method IsPlayer:Int()
-		Return Self.isPlayerFlag
-	End Method
-	
-	' SetPosition
-	Method SetPosition(nX:Float, nY:Float)
-		Self.x = nX
-		Self.y = nY
-	End Method
-	
-	' Move
-	Method Move(mX:Float, mY:Float)
-		Self.x :+ mX * Self.speed
-		Self.y :+ mY * Self.speed
-	End Method
-	
-	' SetName
-	Method SetName(nName:String)
-		Self.name = nName
-	End Method
-	
-	' CreateSkillSlots
-	Method CreateSkillSlots(num:Int)
-		Self.techSlots = New TSlot[num]
-	End Method
-	
-	' SetSlotSkill
-	Method SetSlotSkill(num:Int, skillName:String)
-		Local skill:TSkill
-		
-		Try
-			'skill = TSkill.Create(skillName, Self)
-			skill = TSkill(CreateObjectFromClass("S" + skillName))
-			skill.Init(Self)
-		Catch a:String
-			Print "Skill '" + skillName + "' does not exist."
-			End
-		Catch luaError:Object
-			Print "Lua error: " + luaError.ToString()
-			End
-		End Try
-		
-		Self.techSlots[num] = TSlot.Create(skill)
-	End Method
-	
-	' AddSlotTrigger
-	Method AddSlotTrigger(num:Int, trigger:TTrigger)
-		Self.techSlots[num].AddTrigger(trigger)
-	End Method
-	
-	' SetAnimation
-	Method SetAnimation(anim:TAnimation)
-		If Self.currentAnimation = anim
-			If Self.currentAnimation.IsActive() = 0
-				Self.currentAnimation.Start()
-			EndIf
-			Return
-		EndIf
-		
-		If Self.currentAnimation <> Null
-			Self.currentAnimation.Stop()
-		EndIf
-		
-		Self.currentAnimation = anim
-		
-		If Self.currentAnimation <> Null
-			Self.currentAnimation.Start()
-		EndIf
-	End Method
-	
-	' Draw
-	Method Draw()
-		' Offset
-		Self.grpWeaponEffects.SetOffset(Self.GetX(), Self.GetY())
-		
-		ResetMax2D()
-		If Self.animAttack.GetDirection() = TAnimationAttack.DIRECTION_UP
-			Self.grpWeaponEffects.Draw()
-			
-			' TODO: Remove hardcoded shadow
-			Rem
-			ResetMax2D()
-			.SetColor 0, 0, 0
-			.SetAlpha 0.15
-			.SetScale 1, 0.65
-			.SetRotation -15
-			DrawImage Self.img, Int(Self.x) - 6, Int(Self.y) + 8, Self.currentAnimation.GetFrame()
-			End Rem
-			
-			ResetMax2D()
-			DrawImage Self.img, Int(Self.x), Int(Self.y), Self.currentAnimation.GetFrame()
-		Else
-			' TODO: Remove hardcoded shadow
-			Rem
-			.SetColor 0, 0, 0
-			.SetAlpha 0.15
-			.SetScale 1, 0.65
-			.SetRotation -15
-			DrawImage Self.img, Int(Self.x) - 6, Int(Self.y) + 8, Self.currentAnimation.GetFrame()
-			ResetMax2D()
-			End Rem
-			
-			DrawImage Self.img, Int(Self.x), Int(Self.y), Self.currentAnimation.GetFrame()
-			Self.grpWeaponEffects.Draw()
-			ResetMax2D()
-		EndIf
-	End Method
-	
-	 ' DrawHPAndMP
-	Method DrawHPAndMP()
-		SetColor 0, 0, 0
-		DrawRectOutline Int(Self.x), Int(Self.y) - 13, Self.img.width, 5
-		SetColor 255, 0, 0
-		DrawRect Int(Self.x) + 1, Int(Self.y) - 12, (Self.hp / Self.maxHP) * (Self.img.width - 2), 3
-		
-		SetColor 0, 0, 0
-		DrawRectOutline Int(Self.x), Int(Self.y) - 8, Self.img.width, 5
-		SetColor 0, 0, 255
-		DrawRect Int(Self.x) + 1, Int(Self.y) - 7, (Self.mp / Self.maxMP) * (Self.img.width - 2), 3
-	End Method
-	
-	' SetSpeed
-	Method SetSpeed(nSpeed:Float)
-		Self.speed = nSpeed
-		Self.animWalk.SetFrameDuration(15 / Self.speed)
-	End Method
-	
-	' SetParty
-	Method SetParty(nParty:TParty)
-		If Self.party <> Null
-			Self.party.Remove(Self)
-		EndIf
-		
-		nParty.Add(Self)
 	End Method
 	
 	' GetName
 	Method GetName:String()
 		Return Self.name
+	End Method
+	
+	' GetSpeed
+	Method GetSpeed:Float()
+		Return Self.speed
+	End Method
+	
+	' GetBaseSpeed
+	Method GetBaseSpeed:Float()
+		Return Self.baseSpeed
+	End Method
+	
+	' GetSpeedMultiplier
+	Method GetSpeedMultiplier:Float()
+		Return Self.speedMultiplier
 	End Method
 	
 	' GetKillCount
@@ -341,6 +221,66 @@ Type TEntity
 		Return Self.y + Self.img.height
 	End Method
 	
+	' GetBuffContainer
+	Method GetBuffContainer:TBuffContainer()
+		Return Self.buffs
+	End Method
+	
+	' GetDebuffContainer
+	Method GetDebuffContainer:TBuffContainer()
+		Return Self.debuffs
+	End Method
+	
+	' SetAnimation
+	Method SetAnimation(anim:TAnimation)
+		If Self.currentAnimation = anim
+			If Self.currentAnimation.IsActive() = 0
+				Self.currentAnimation.Start()
+			EndIf
+			Return
+		EndIf
+		
+		If Self.currentAnimation <> Null
+			Self.currentAnimation.Stop()
+		EndIf
+		
+		Self.currentAnimation = anim
+		
+		If Self.currentAnimation <> Null
+			Self.currentAnimation.Start()
+		EndIf
+	End Method
+	
+	' SetSpeedMultiplier
+	Method SetSpeedMultiplier(nSpeedMultiplier:Float)
+		Self.speedMultiplier = nSpeedMultiplier
+		Self.OnSpeedChange()
+	End Method
+	
+	' SetBaseSpeed
+	Method SetBaseSpeed(nSpeed:Float)
+		Self.baseSpeed = nSpeed
+		Self.OnSpeedChange()
+	End Method
+	
+	' SetHP
+	Method SetHP(amount:Float)
+		Self.hp = amount
+		
+		If Self.hp > Self.maxHP
+			Self.hp = Self.maxHP
+		EndIf
+	End Method
+	
+	' SetParty
+	Method SetParty(nParty:TParty)
+		If Self.party <> Null
+			Self.party.Remove(Self)
+		EndIf
+		
+		nParty.Add(Self)
+	End Method
+	
 	' SetKillCount
 	Method SetKillCount(kills:Int)
 		Self.killCount = kills
@@ -389,6 +329,29 @@ Type TEntity
 		Self.animAttack.ApplyDirectionFromWalkAni(Self.animWalk)
 	End Method
 	
+	' SetPosition
+	Method SetPosition(nX:Float, nY:Float)
+		Self.x = nX
+		Self.y = nY
+	End Method
+	
+	' SetName
+	Method SetName(nName:String)
+		Self.name = nName
+	End Method
+	
+	' SetImageFile
+	Method SetImageFile(nFile:String) Abstract
+	
+	' Update
+	Method Update() Abstract
+	
+	' UpdateBuffs
+	Method UpdateBuffs()
+		Self.buffs.Update()
+		Self.debuffs.Update()
+	End Method
+	
 	' UpdateDirection
 	Method UpdateDirection(mX:Float, mY:Float)
 		If mX = 0 And mY = 0
@@ -401,6 +364,97 @@ Type TEntity
 			Self.animWalk.SetDirection(Self.baseDirection)
 			Self.animAttack.ApplyDirectionFromWalkAni(Self.animWalk)
 		EndIf
+	End Method
+	
+	' IsPlayer
+	Method IsPlayer:Int()
+		Return Self.isPlayerFlag
+	End Method
+	
+	' Move
+	Method Move(mX:Float, mY:Float)
+		Self.x :+ mX * Self.GetSpeed()
+		Self.y :+ mY * Self.GetSpeed()
+	End Method
+	
+	' CreateSkillSlots
+	Method CreateSkillSlots(num:Int)
+		Self.techSlots = New TSlot[num]
+	End Method
+	
+	' SetSlotSkill
+	Method SetSlotSkill(num:Int, skillName:String)
+		Local skill:TSkill
+		
+		Try
+			'skill = TSkill.Create(skillName, Self)
+			skill = TSkill(CreateObjectFromClass("S" + skillName))
+			skill.Init(Self)
+		Catch a:String
+			Print "Skill '" + skillName + "' does not exist."
+			End
+		Catch luaError:Object
+			Print "Lua error: " + luaError.ToString()
+			End
+		End Try
+		
+		Self.techSlots[num] = TSlot.Create(skill)
+	End Method
+	
+	' AddSlotTrigger
+	Method AddSlotTrigger(num:Int, trigger:TTrigger)
+		Self.techSlots[num].AddTrigger(trigger)
+	End Method
+	
+	' Draw
+	Method Draw()
+		' Offset
+		Self.grpWeaponEffects.SetOffset(Self.GetX(), Self.GetY())
+		
+		ResetMax2D()
+		If Self.animAttack.GetDirection() = TAnimationAttack.DIRECTION_UP
+			Self.grpWeaponEffects.Draw()
+			
+			' TODO: Remove hardcoded shadow
+			Rem
+			ResetMax2D()
+			.SetColor 0, 0, 0
+			.SetAlpha 0.15
+			.SetScale 1, 0.65
+			.SetRotation -15
+			DrawImage Self.img, Int(Self.x) - 6, Int(Self.y) + 8, Self.currentAnimation.GetFrame()
+			End Rem
+			
+			ResetMax2D()
+			DrawImage Self.img, Int(Self.x), Int(Self.y), Self.currentAnimation.GetFrame()
+		Else
+			' TODO: Remove hardcoded shadow
+			Rem
+			.SetColor 0, 0, 0
+			.SetAlpha 0.15
+			.SetScale 1, 0.65
+			.SetRotation -15
+			DrawImage Self.img, Int(Self.x) - 6, Int(Self.y) + 8, Self.currentAnimation.GetFrame()
+			ResetMax2D()
+			End Rem
+			
+			DrawImage Self.img, Int(Self.x), Int(Self.y), Self.currentAnimation.GetFrame()
+			Self.grpWeaponEffects.Draw()
+			ResetMax2D()
+		EndIf
+	End Method
+	
+	 ' DrawHPAndMP
+	Method DrawHPAndMP()
+		SetColor 0, 0, 0
+		DrawRectOutline Int(Self.x), Int(Self.y) - 13, Self.img.width, 5
+		SetColor 255, 0, 0
+		DrawRect Int(Self.x) + 1, Int(Self.y) - 12, (Self.hp / Self.maxHP) * (Self.img.width - 2), 3
+		
+		SetColor 0, 0, 0
+		DrawRectOutline Int(Self.x), Int(Self.y) - 8, Self.img.width, 5
+		SetColor 0, 0, 255
+		DrawRect Int(Self.x) + 1, Int(Self.y) - 7, (Self.mp / Self.maxMP) * (Self.img.width - 2), 3
 	End Method
 	
 	' DelayCast
@@ -490,15 +544,6 @@ Type TEntity
 		Return Self.hp > 0
 	End Method
 	
-	' SetHP
-	Method SetHP(amount:Float)
-		Self.hp = amount
-		
-		If Self.hp > Self.maxHP
-			Self.hp = Self.maxHP
-		EndIf
-	End Method
-	
 	' AddHP
 	Method AddHP(amount:Float)
 		Self.hp:+amount
@@ -561,32 +606,21 @@ Type TEntity
 		Self.castingSkill = Null
 	End Method
 	
-	' UpdateBuffs
-	Method UpdateBuffs()
-		Self.buffs.Update()
-		Self.debuffs.Update()
-	End Method
-	
-	' GetBuffContainer
-	Method GetBuffContainer:TBuffContainer()
-		Return Self.buffs
-	End Method
-	
-	' GetDebuffContainer
-	Method GetDebuffContainer:TBuffContainer()
-		Return Self.debuffs
-	End Method
-	
 	' PositionToString
 	Method PositionToString:String()
 		Return Int(Self.x) + ", " + Int(Self.y)
 	End Method
 	
-	' SetImageFile
-	Method SetImageFile(nFile:String) Abstract
-	
-	' Update
-	Method Update() Abstract
+	' OnSpeedChange
+	Method OnSpeedChange()
+		Self.speed = Self.baseSpeed * Self.speedMultiplier
+		
+		If Self.speed <> 0
+			Self.animWalk.SetFrameDuration(15 / Self.speed)
+		Else
+			Self.animWalk.SetFrameDuration(999999999)
+		EndIf
+	End Method
 	
 	' Die
 	Method Die() Abstract

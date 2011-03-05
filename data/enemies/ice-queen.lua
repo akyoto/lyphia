@@ -2,7 +2,7 @@ function init()
 	super.SetName("Ice Queen")
 	super.SetImageFile("ice-queen.png")
 	super.InitStatus(3, 250, 230)
-	super.SetSpeed(0.2)
+	super.SetBaseSpeed(0.2)
 	super.CreateSkillSlots(3)
 	
 	-- 0

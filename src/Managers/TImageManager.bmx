@@ -5,6 +5,7 @@ SuperStrict
 Import BRL.Max2D
 
 ' File formats
+Import BRL.JPGLoader
 Import BRL.PNGLoader
 
 ' Files
@@ -19,6 +20,7 @@ Type TImageManager Extends TResourceManager
 	' Init
 	Method Init(nLogger:TLog)
 		Super.InitManager(nLogger)
+		Super.AddExtension("jpg")
 		Super.AddExtension("png")
 		Self.resourceType = "image"
 		
