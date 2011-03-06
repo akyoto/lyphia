@@ -96,7 +96,9 @@ Function RoomThreadFunc:Object(data:Object)
 	TClientMsgHandler.serverConnectFunc(room)
 	
 	While stream <> Null And stream.GetState() = 1
+		?Not Debug
 		Try
+		?
 			room.streamMutex.Lock()
 				If stream.RecvAvail()
 					' Receive msg
@@ -117,13 +119,16 @@ Function RoomThreadFunc:Object(data:Object)
 				While stream.SendMsg()
 				Wend
 			room.streamMutex.Unlock()
+		?Not Debug
 		Catch exc:Object
 			If game.logger <> Null
 				game.logger.Write("Network stream error: " + exc.ToString())
 			Else
 				Print exc.ToString()
 			EndIf
+			End
 		End Try
+		?
 		
 		Delay game.networkThreadDelay
 	Wend

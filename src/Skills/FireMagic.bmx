@@ -471,6 +471,8 @@ Type SMeteorRain Extends TFireMagic
 	' Init
 	Method Init(nCaster:TEntity) 
 		Super.Init(nCaster)
+		
+		Self.SetFollowUpSkill(SInferno.Create(nCaster))
 	End Method
 	
 	' Cast
@@ -589,7 +591,7 @@ Type SInferno Extends TFireMagic
 	
 	' Create
 	Function Create:TSkill(nCaster:TEntity)
-		Local skill:TSkill = New SMeteorRain
+		Local skill:TSkill = New SInferno
 		skill.Init(nCaster)
 		Return skill
 	End Function

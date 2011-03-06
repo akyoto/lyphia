@@ -66,6 +66,8 @@ Type SDarkMatter Extends TShadowMagic
 	' Init
 	Method Init(nCaster:TEntity) 
 		Super.Init(nCaster)
+		
+		Self.SetFollowUpSkill(STwilight.Create(nCaster))
 	End Method
 	
 	' Cast
@@ -97,7 +99,7 @@ Type SDarkMatter Extends TShadowMagic
 		gsInGame.chanEffects.Play("DarkMatter")
 		
 		For Local ballDegree:Int = -30 To 30 Step 30
-			TDarkMatter.Create(Self.caster, Self.caster.GetMidX() + CosFastSec(Self.caster.GetDegree() + ballDegree) * 100, Self.caster.GetMidY() - SinFastSec(Self.caster.GetDegree() + ballDegree) * 100, 10)
+			TDarkMatter.Create(Self.caster, Self.caster.GetMidX() + CosFastSec(Self.caster.GetDegree() + ballDegree) * 80, Self.caster.GetMidY() - SinFastSec(Self.caster.GetDegree() + ballDegree) * 80, 10)
 		Next
 	End Method
 	
@@ -114,6 +116,67 @@ Type SDarkMatter Extends TShadowMagic
 	' Create
 	Function Create:TSkill(nCaster:TEntity)
 		Local skill:TSkill = New SDarkMatter
+		skill.Init(nCaster)
+		Return skill
+	End Function
+End Type
+
+
+' STwilight
+Type STwilight Extends TShadowMagic
+	' Init
+	Method Init(nCaster:TEntity) 
+		Super.Init(nCaster)
+	End Method
+	
+	' Cast
+	Method Cast()
+		Self.caster.Cast(Self)
+		
+		Local pDegree:Int
+		For Local i:Int = 0 To game.speed / 8
+			pDegree = Rand(0, 359)
+			TParticleTween.Create(..
+				gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..
+				250,..
+				gsInGame.particleImg,..
+				Self.caster.GetMidX(), Self.caster.GetMidY(),  ..
+				Self.caster.GetMidX() + CosFast[pDegree] * Rand(5, 10), Self.caster.GetMidY() + SinFast[pDegree] * Rand(5, 10),  ..
+				0.5, 0.1,..
+				0, 360,..
+				0.5, 0.75,..
+				0.5, 0.75,..
+				255, 255, 0,..
+				192, 180, 160..
+				..
+			)
+		Next
+	End Method
+	
+	' Use
+	Method Use()
+		gsInGame.chanEffects.Play("Twilight")
+		
+		For Local ballDegree:Int = 0 To 360 Step 30
+		If ballDegree Mod 45 > 0
+			TDarkMatter.Create(Self.caster, Self.caster.GetMidX() + CosFastSec(Self.caster.GetDegree() + ballDegree) * 120, Self.caster.GetMidY() - SinFastSec(Self.caster.GetDegree() + ballDegree) * 120, 10)
+		End If			
+		Next
+	End Method
+	
+	' GetName
+	Method GetName:String() 
+		Return "Twilight"
+	End Method
+	
+	' GetDescription
+	Method GetDescription:String() 
+		Return "TODO"
+	End Method
+	
+	' Create
+	Function Create:TSkill(nCaster:TEntity)
+		Local skill:TSkill = New STwilight
 		skill.Init(nCaster)
 		Return skill
 	End Function

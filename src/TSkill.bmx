@@ -34,6 +34,9 @@ Type TSkill Extends TAction
 	Field hasBeenAdvanced:Int
 	Field slot:TSkillSlot
 	
+	' Network
+	Field endSkillSent:Int
+	
 	' Init
 	Method Init(nCaster:TEntity)	'skillName:String, 
 		Self.hpCostAbs = 0
@@ -76,16 +79,35 @@ Type TSkill Extends TAction
 		skill.preSkill = Self
 	End Method
 	
+	' CanBeCasted
+	Method CanBeCasted:Int()
+		Return MilliSecs() - Self.lastCast > Self.cooldown And Self.caster.HasEnoughMP(Self.mpCostAbs, Self.mpCostRel)
+	End Method
+	
 	' Exec
 	Method Exec(trigger:TTrigger)
-		If MilliSecs() - Self.lastCast > Self.cooldown And Self.caster.HasEnoughMP(Self.mpCostAbs, Self.mpCostRel)
+		If Self.CanBeCasted()
 			If trigger = Null Or Self.caster.IsPlayer() = Null
 				Self.castStarted = MilliSecs()
 				Self.Cast()
+				Self.endSkillSent = False
 			EndIf
 		Else
 			' TODO: Print info message
 		EndIf
+	End Method
+	
+	' GetAdvancementLevel
+	Method GetAdvancementLevel:Int()
+		Local skill:TSkill = Self
+		Local level:Int = 0
+		
+		While skill.preSkill <> Null
+			level :+ 1
+			skill = skill.preSkill
+		Wend
+		
+		Return level
 	End Method
 	
 	' GetCastProgress
@@ -147,6 +169,10 @@ Type TSkill Extends TAction
 	' SetSlot
 	Method SetSlot(nSlot:TSkillSlot)
 		Self.slot = nSlot
+		
+		If Self.followUpSkill <> Null
+			Self.followUpSkill.SetSlot(Self.slot)
+		EndIf
 	End Method
 	
 	' SetCaster
@@ -154,24 +180,28 @@ Type TSkill Extends TAction
 		Self.caster = nCaster
 	End Method
 	
+	' GoingToAdvance
+	Method GoingToAdvance:Int()
+		Return Self.followUpSkill <> Null And Self.followUpSkill.CanBeCasted() And Self.slot.GetTriggeredSkillAdvanceTrigger() <> Null
+	End Method
+	
+	' Advance
+	Method Advance()
+		' Start the next skill
+		Self.followUpSkill.Exec(Null)
+		
+		' Set flag to true
+		Self.hasBeenAdvanced = True
+		
+		' Set the flag for the pre skill to False
+		If Self.preSkill <> Null
+			Self.preSkill.hasBeenAdvanced = False
+		EndIf
+	End Method
+	
 	' Start
 	Method Start()
-		If Self.caster <> Null And Self.caster.HasEnoughMP(Self.mpCostAbs, Self.mpCostRel)
-			' Skill levels / advancements
-			If Self.followUpSkill <> Null And Self.slot.GetTriggeredSkillAdvanceTrigger() <> Null
-				Self.followUpSkill.Exec(Null)
-				Self.hasBeenAdvanced = True
-				
-				' Set the flag for the pre skill to False
-				If Self.preSkill <> Null
-					Self.preSkill.hasBeenAdvanced = False
-				EndIf
-				
-				Return
-			Else
-				Self.hasBeenAdvanced = False
-			EndIf
-			
+		If Self.caster <> Null And Self.CanBeCasted()
 			Self.lastCast = MilliSecs()
 			Self.caster.UseMP(Self.mpCostAbs, Self.mpCostRel)
 			Self.Use()

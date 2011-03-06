@@ -451,8 +451,10 @@ Type TEntity
 		EndIf
 	End Method
 	
-	 ' DrawHPAndMP
+	' DrawHPAndMP
 	Method DrawHPAndMP()
+		SetAlpha 1
+		
 		SetColor 0, 0, 0
 		DrawRectOutline Int(Self.x), Int(Self.y) - 13, Self.img.width, 5
 		SetColor 255, 0, 0
@@ -462,6 +464,39 @@ Type TEntity
 		DrawRectOutline Int(Self.x), Int(Self.y) - 8, Self.img.width, 5
 		SetColor 0, 0, 255
 		DrawRect Int(Self.x) + 1, Int(Self.y) - 7, (Self.mp / Self.maxMP) * (Self.img.width - 2), 3
+	End Method
+	
+	' DrawPartyIndicator
+	Method DrawPartyIndicator()
+		SetColor Self.party.r, Self.party.g, Self.party.b
+		SetAlpha 0.5
+		
+		Local posX:Int = Self.GetMidX() - 19
+		Local posY:Int = Int(Self.y) + Self.img.height - 12 - 2
+		Local width:Int = 38
+		Local height:Int = 20
+		
+		DrawOval posX, posY, width, height
+		
+		If Self.castingSkill <> Null And Self.castingSkill.castTime > 0
+			Local progress:Float = Self.castingSkill.GetCastProgress()
+			Local degree:Float = 90 - progress * 360
+			Local halfWidth:Int = width / 2
+			Local halfHeight:Int = height / 2
+			
+			posX :+ halfWidth
+			posY :+ halfHeight
+			
+			SetColor Self.party.castR, Self.party.castG, Self.party.castB
+			SetAlpha 0.3
+			SetLineWidth 2
+			
+			For Local currentDegree:Float = 90 To degree Step -2
+				DrawLine posX, posY, posX + CosFastSec(currentDegree) * halfWidth, posY - SinFastSec(currentDegree) * halfHeight
+			Next
+			
+			SetLineWidth 1
+		EndIf
 	End Method
 	
 	' DelayCast

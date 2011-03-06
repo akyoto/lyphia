@@ -21,6 +21,7 @@ Type TGameStateArena Extends TGameState
 	'Const CLIENT_PORT:Short = 1310
 	
 	Field loggerServer:TLog
+	Field loggerClient:TLog
 	
 	' FPS
 	Field frameCounter:TFrameRate
@@ -68,6 +69,11 @@ Type TGameStateArena Extends TGameState
 		For Local I:Int = 0 Until 2
 			Self.parties[I] = TParty.Create("Team " + (I + 1))
 		Next
+		
+		Self.parties[0].SetColor(255, 164, 0)
+		Self.parties[0].SetCastColor(255, 224, 0)
+		Self.parties[1].SetColor(0, 164, 255)
+		Self.parties[1].SetCastColor(0, 224, 255)
 		
 		' Reset
 		Self.room = Null
@@ -186,6 +192,7 @@ Type TGameStateArena Extends TGameState
 		Self.charList.AddItem("Kimiko")
 		Self.charList.AddItem("Kyuji")
 		Self.charList.AddItem("Mystic")
+		Self.charList.AddItem("Yami")
 		Self.charList.AddItem("Zeypher")
 	End Method
 	
@@ -326,9 +333,22 @@ Type TGameStateArena Extends TGameState
 			Local port:Short = TGameStateArena.SERVER_PORT
 			Local characterName:String
 			
-			game.logger.Write("Connecting to '" + host + "' at port " + port + " (room '" + nName + "')")
+			' Server log
+			If Self.loggerClient = Null
+				Self.loggerClient = TLog.Create(StandardIOStream)
+				Self.loggerClient.SetPrefix("[CLIENT] ")
+				Rem
+				?Debug
+					Self.loggerClient = TLog.Create(StandardIOStream)
+				?Not Debug
+					Self.loggerClient = TLog.Create(WriteFile(FS_ROOT + "logs/client.txt"))
+				?
+				End Rem
+			EndIf
+			
+			Self.loggerClient.Write("Connecting to '" + host + "' at port " + port + " (room '" + nName + "')")
 			Self.room = TRoom.Create(host, port)
-			game.logger.Write("Successfully connected.")
+			Self.loggerClient.Write("Successfully connected.")
 			
 			characterName = Self.charList.GetText()
 			If characterName = ""
@@ -351,11 +371,15 @@ Type TGameStateArena Extends TGameState
 		Try
 			' Server log
 			If Self.loggerServer = Null
+				Self.loggerServer = TLog.Create(StandardIOStream)
+				Self.loggerServer.SetPrefix("[SERVER] ")
+				Rem
 				?Debug
 					Self.loggerServer = TLog.Create(StandardIOStream)
 				?Not Debug
 					Self.loggerServer = TLog.Create(WriteFile(FS_ROOT + "logs/server.txt"))
 				?
+				End Rem
 			EndIf
 			
 			Self.loggerServer.Write("Initializing server at port " + TGameStateArena.SERVER_PORT + " for room '" + nName + "'")
@@ -493,6 +517,7 @@ Type TServerFuncs
 		TServerMsgHandler.SetFunction(100, TServerFuncs.MovePlayer)
 		TServerMsgHandler.SetFunction(101, TServerFuncs.LockPlayerDirection)
 		TServerMsgHandler.SetFunction(110, TServerFuncs.StartSkillCast)
+		TServerMsgHandler.SetFunction(111, TServerFuncs.EndSkillCast)
 		TServerMsgHandler.SetFunction(230, TServerFuncs.PingCheck)
 		TServerMsgHandler.SetFunction(255, TServerFuncs.StartGame)
 	End Function
@@ -657,6 +682,29 @@ Type TServerFuncs
 				bcClient.streamMutex.Unlock()
 			Next
 		client.server.clientListMutex.Unlock()
+		
+		gsArena.loggerServer.Write("Skill #" + slotID + " has been started by " + client.player.GetName())
+	End Function
+	
+	' EndSkillCast
+	Function EndSkillCast(client:TLyphiaClient)
+		Local advances:Byte = client.stream.ReadByte()
+		
+		client.server.clientListMutex.Lock()
+			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
+				bcClient.streamMutex.Lock()
+					bcClient.stream.WriteByte(111)
+					bcClient.stream.WriteByte(client.player.GetID())
+					bcClient.stream.WriteByte(advances)
+				bcClient.streamMutex.Unlock()
+			Next
+		client.server.clientListMutex.Unlock()
+		
+		If advances
+			gsArena.loggerServer.Write("Skill has been advanced by " + client.player.GetName())
+		Else
+			gsArena.loggerServer.Write("Skill has not been advanced by " + client.player.GetName())
+		EndIf
 	End Function
 	
 	' PingCheck
@@ -701,6 +749,7 @@ Type TClientFuncs
 		TClientMsgHandler.SetFunction(100, TClientFuncs.MovePlayer)
 		TClientMsgHandler.SetFunction(101, TClientFuncs.LockPlayerDirection)
 		TClientMsgHandler.SetFunction(110, TClientFuncs.StartSkillCast)
+		TClientMsgHandler.SetFunction(111, TClientFuncs.EndSkillCast)
 		TClientMsgHandler.SetFunction(230, TClientFuncs.PingCheck)
 		TClientMsgHandler.SetFunction(255, TClientFuncs.StartGame)
 	End Function
@@ -872,7 +921,47 @@ Type TClientFuncs
 		Local slotID:Byte = room.stream.ReadByte()
 		
 		Local player:TPlayer = TPlayer.players[playerID]
-		player.techSlots[slotID].GetAction().Exec(Null)
+		Local skill:TSkill = TSkill(player.techSlots[slotID].GetAction())
+		skill.Exec(Null)
+		
+		gsArena.loggerClient.Write(skill.GetName() + " started by " + player.GetName())
+		Rem
+		Local skill:TSkill
+		skill = TSkill(player.techSlots[slotID].GetAction())
+		
+		For Local I:Int = 1 To advancement
+			skill = skill.followUpSkill
+		Next
+		
+		skill.Exec(Null)
+		End Rem
+	End Function
+	
+	' EndSkillCast
+	Function EndSkillCast(room:TRoom)
+		Local playerID:Byte = room.stream.ReadByte()
+		Local advances:Byte = room.stream.ReadByte()
+		
+		Local player:TPlayer = TPlayer.players[playerID]
+		
+		If advances = 0
+			If player.castingSkill <> Null
+				player.castingSkill.Start()
+				'Print player.castingSkill.GetName() " not advanced by " + player.GetName()
+				gsArena.loggerClient.Write(player.castingSkill.GetName() + " ended by " + player.GetName())
+			EndIf
+			
+			If player = gsInGame.player
+				gsInGame.skillCastBar.SetVisible(False)
+			EndIf
+			
+			player.EndCast()
+		Else
+			If player.castingSkill <> Null
+				player.castingSkill.Advance()
+				gsArena.loggerClient.Write(player.castingSkill.GetName() + " advanced by " + player.GetName())
+			EndIf
+		EndIf
 	End Function
 	
 	' PingCheck

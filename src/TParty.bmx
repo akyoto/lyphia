@@ -7,6 +7,9 @@ Type TParty
 	Field name:String
 	Field members:TList
 	
+	Field r:Int, g:Int, b:Int
+	Field castR:Int, castG:Int, castB:Int
+	
 	' Init
 	Method Init(nName:String)
 		Self.name = nName
@@ -29,6 +32,20 @@ Type TParty
 		Else
 			Throw "'" + nEntity.GetName() + "' has no party"
 		EndIf
+	End Method
+	
+	' SetColor
+	Method SetColor(nR:Int, nG:Int, nB:Int)
+		Self.r = nR
+		Self.g = nG
+		Self.b = nB
+	End Method
+	
+	' SetCastColor
+	Method SetCastColor(nR:Int, nG:Int, nB:Int)
+		Self.castR = nR
+		Self.castG = nG
+		Self.castB = nB
 	End Method
 	
 	' Clear

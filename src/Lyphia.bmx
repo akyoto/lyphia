@@ -19,6 +19,7 @@ End Rem
 ' * Fix kill announcements
 ' * Add team markers
 ' * Change skill icon for advancements
+' * Skill advancement should work in network mode
 
 ' Strict
 SuperStrict

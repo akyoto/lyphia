@@ -802,14 +802,19 @@ Type TGameStateInGame Extends TGameState
 			UpdateSlots(player.techSlots)
 			
 			For Local I:Byte = 0 Until Self.player.techSlots.length
-				If Self.player.techSlots[I].WasTriggeredEarlier()
+				Local slot:TSlot = Self.player.techSlots[I]
+				
+				If slot.WasTriggeredEarlier()
 					If Self.inNetworkMode
-						Self.room.streamMutex.Lock()
-							Self.room.stream.WriteByte(110)
-							Self.room.stream.WriteByte(I)
-						Self.room.streamMutex.Unlock()
+						If TSkill(slot.GetAction()).CanBeCasted()
+							Self.room.streamMutex.Lock()
+								Self.room.stream.WriteByte(110)
+								Self.room.stream.WriteByte(I)
+							Self.room.streamMutex.Unlock()
+							Print "Sent skill start!"
+						EndIf
 					Else
-						Self.player.techSlots[I].GetAction().Exec(Null)
+						slot.GetAction().Exec(Null)
 					EndIf
 				EndIf
 			Next
@@ -870,14 +875,24 @@ Type TGameStateInGame Extends TGameState
 							Self.skillCastBar.SetProgress(progress)
 						EndIf
 					Else
-						If player = Self.player
+						If Self.inNetworkMode = False
 							Self.skillCastBar.SetVisible(False)
-						EndIf
-						
-						skill.Start()
-						
-						If skill.hasBeenAdvanced = False
-							player.EndCast()
+							
+							If skill.GoingToAdvance()
+								skill.Advance()
+							Else
+								skill.Start()
+								player.EndCast()
+							EndIf
+						Else
+							If player = Self.player And skill.endSkillSent = False
+								'skill.Start()
+								Self.room.streamMutex.Lock()
+									Self.room.stream.WriteByte(111)
+									Self.room.stream.WriteByte(skill.GoingToAdvance())
+								Self.room.streamMutex.Unlock()
+								skill.endSkillSent = True
+							EndIf
 						EndIf
 					EndIf
 				EndIf
@@ -1345,7 +1360,9 @@ Type TGameStateInGame Extends TGameState
 						.SetColor 0, 0, 0
 						.SetImageFont gsInGame.playerTitleFont
 						DrawTextCentered player.GetName(), player.GetMidX(), player.GetY() - 24
+						
 						player.DrawHPAndMP()
+						player.DrawPartyIndicator()
 					EndIf
 					
 					' This will ResetMax2D()

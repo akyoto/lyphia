@@ -18,6 +18,7 @@ Type TLog
 	
 	Field stream:TStream
 	Field lastLogTime:Int
+	Field prefix:String
 	
 	?Threaded
 		Field streamMutex:TMutex
@@ -31,6 +32,11 @@ Type TLog
 		?Threaded
 			Self.streamMutex = CreateMutex()
 		?
+	End Method
+	
+	' SetPrefix
+	Method SetPrefix(nPrefix:String)
+		Self.prefix = nPrefix
 	End Method
 	
 	' Delete
@@ -59,7 +65,7 @@ Type TLog
 				postFix = " [" + (MilliSecs() - Self.lastLogTime) + " ms]" + NEWLINE
 			EndIf
 			
-			Self.stream.WriteString(postFix + CurrentDate() + " - " + CurrentTime() + " : " + msg)
+			Self.stream.WriteString(postFix + CurrentDate() + " - " + CurrentTime() + " : " + Self.prefix + msg)
 			Self.stream.Flush()
 			Self.lastLogTime = MilliSecs()
 			
