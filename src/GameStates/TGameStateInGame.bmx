@@ -549,7 +549,7 @@ Type TGameStateInGame Extends TGameState
 	Method UpdateSkillView()
 		Local skill:TSkill
 		For Local I:Int = 0 Until Self.player.techSlots.length
-			Local skillBox:TWidget = Self.skillView.GetChild("skill" + I)
+			Local skillBox:TImageBox = TImageBox(Self.skillView.GetChild("skill" + I))
 			
 			SetAlpha 1
 			SetColor 0, 0, 0
@@ -564,6 +564,8 @@ Type TGameStateInGame Extends TGameState
 			If Self.player.techSlots[I] <> Null
 				skill = TSkill(Self.player.techSlots[I].GetAction())
 				If skill <> Null
+					skillBox.SetImage(skill.img)
+					
 					If skill = Self.player.castingSkill
 						SetAlpha 0.05 + (1 - skill.GetCastProgress()) * 0.2
 						SetColor 255, 255, 255
@@ -811,7 +813,6 @@ Type TGameStateInGame Extends TGameState
 								Self.room.stream.WriteByte(110)
 								Self.room.stream.WriteByte(I)
 							Self.room.streamMutex.Unlock()
-							Print "Sent skill start!"
 						EndIf
 					Else
 						slot.GetAction().Exec(Null)
@@ -875,7 +876,10 @@ Type TGameStateInGame Extends TGameState
 							Self.skillCastBar.SetProgress(progress)
 						EndIf
 					Else
+						Local slot:TSlot = skill.GetSlot()
+						
 						If Self.inNetworkMode = False
+							' Hide cast bar
 							Self.skillCastBar.SetVisible(False)
 							
 							If skill.GoingToAdvance()
@@ -883,15 +887,26 @@ Type TGameStateInGame Extends TGameState
 							Else
 								skill.Start()
 								player.EndCast()
+								
+								While TSkill(slot.GetAction()).preSkill <> Null
+									slot.SetAction(TSkill(slot.GetAction()).preSkill)
+								Wend
 							EndIf
 						Else
-							If player = Self.player And skill.endSkillSent = False
-								'skill.Start()
-								Self.room.streamMutex.Lock()
-									Self.room.stream.WriteByte(111)
-									Self.room.stream.WriteByte(skill.GoingToAdvance())
-								Self.room.streamMutex.Unlock()
-								skill.endSkillSent = True
+							If skill.CanBeAdvanced() = True
+								If player = Self.player And skill.endSkillSent = False
+									'skill.Start()
+									Self.room.streamMutex.Lock()
+										Self.room.stream.WriteByte(111)
+										Self.room.stream.WriteByte(skill.GoingToAdvance())
+									Self.room.streamMutex.Unlock()
+									skill.endSkillSent = True
+								EndIf
+							Else
+								Self.skillCastBar.SetVisible(False)
+								
+								skill.Start()
+								player.EndCast()
 							EndIf
 						EndIf
 					EndIf

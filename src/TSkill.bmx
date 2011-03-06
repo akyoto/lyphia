@@ -84,6 +84,11 @@ Type TSkill Extends TAction
 		Return MilliSecs() - Self.lastCast > Self.cooldown And Self.caster.HasEnoughMP(Self.mpCostAbs, Self.mpCostRel)
 	End Method
 	
+	' CanBeAdvanced
+	Method CanBeAdvanced:Int()
+		Return Self.followUpSkill <> Null
+	End Method
+	
 	' Exec
 	Method Exec(trigger:TTrigger)
 		If Self.CanBeCasted()
@@ -185,6 +190,11 @@ Type TSkill Extends TAction
 		Return Self.followUpSkill <> Null And Self.followUpSkill.CanBeCasted() And Self.slot.GetTriggeredSkillAdvanceTrigger() <> Null
 	End Method
 	
+	' GetSlot
+	Method GetSlot:TSlot()
+		Return Self.slot
+	End Method
+	
 	' Advance
 	Method Advance()
 		' Start the next skill
@@ -194,9 +204,11 @@ Type TSkill Extends TAction
 		Self.hasBeenAdvanced = True
 		
 		' Set the flag for the pre skill to False
-		If Self.preSkill <> Null
-			Self.preSkill.hasBeenAdvanced = False
-		EndIf
+		'If Self.preSkill <> Null
+		'	Self.preSkill.hasBeenAdvanced = False
+		'EndIf
+		
+		Self.GetSlot().SetAction(Self.followUpSkill)
 	End Method
 	
 	' Start

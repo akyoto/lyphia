@@ -644,6 +644,11 @@ Type TEntity
 	
 	' EndCast
 	Method EndCast()
+		Local slot:TSlot = Self.castingSkill.GetSlot()
+		While TSkill(slot.GetAction()).preSkill <> Null
+			slot.SetAction(TSkill(slot.GetAction()).preSkill)
+		Wend
+		
 		Self.SetAnimation(Self.animWalk) 
 		Self.castingSkill = Null
 	End Method

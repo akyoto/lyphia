@@ -141,7 +141,7 @@ Type TFireBreath Extends TFireMagicInstance
 		
 		Self.maxRunTime = 1000
 		
-		Self.dmg = Rand(2, 4)
+		Self.dmg = Rand(4, 6)
 	End Method
 	
 	' Run
@@ -183,7 +183,7 @@ Type TFireBreath Extends TFireMagicInstance
 	
 	' OnHit
 	Method OnHit:Int()
-		TBurnDeBuff.Create(Self.caster, Self.target, 12000, 10, 3000)
+		TBurnDeBuff.Create(Self.caster, Self.target, 12000, 10, 2000)
 		'Self.Remove()
 		Return True
 	End Method

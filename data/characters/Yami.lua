@@ -16,6 +16,6 @@ function init()
 	super.SetSlotSkill(4, "DarkMatter")
 	super.SetSlotSkill(5, "Hurricane")
 	super.SetSlotSkill(6, "SoulStrike")
-	super.SetSlotSkill(7, "IcyRays")
-	super.SetSlotSkill(8, "IceWave")
+	super.SetSlotSkill(7, "ArcaneShadowOrb2")
+	super.SetSlotSkill(8, "DarkHole")
 end

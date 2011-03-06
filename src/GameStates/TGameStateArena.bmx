@@ -335,15 +335,13 @@ Type TGameStateArena Extends TGameState
 			
 			' Server log
 			If Self.loggerClient = Null
-				Self.loggerClient = TLog.Create(StandardIOStream)
-				Self.loggerClient.SetPrefix("[CLIENT] ")
-				Rem
 				?Debug
 					Self.loggerClient = TLog.Create(StandardIOStream)
 				?Not Debug
 					Self.loggerClient = TLog.Create(WriteFile(FS_ROOT + "logs/client.txt"))
 				?
-				End Rem
+				
+				Self.loggerClient.SetPrefix("[CLIENT] ")
 			EndIf
 			
 			Self.loggerClient.Write("Connecting to '" + host + "' at port " + port + " (room '" + nName + "')")
@@ -371,15 +369,13 @@ Type TGameStateArena Extends TGameState
 		Try
 			' Server log
 			If Self.loggerServer = Null
-				Self.loggerServer = TLog.Create(StandardIOStream)
-				Self.loggerServer.SetPrefix("[SERVER] ")
-				Rem
 				?Debug
 					Self.loggerServer = TLog.Create(StandardIOStream)
 				?Not Debug
 					Self.loggerServer = TLog.Create(WriteFile(FS_ROOT + "logs/server.txt"))
 				?
-				End Rem
+				
+				Self.loggerServer.SetPrefix("[SERVER] ")
 			EndIf
 			
 			Self.loggerServer.Write("Initializing server at port " + TGameStateArena.SERVER_PORT + " for room '" + nName + "'")
@@ -959,6 +955,7 @@ Type TClientFuncs
 		Else
 			If player.castingSkill <> Null
 				player.castingSkill.Advance()
+				
 				gsArena.loggerClient.Write(player.castingSkill.GetName() + " advanced by " + player.GetName())
 			EndIf
 		EndIf

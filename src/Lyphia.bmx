@@ -17,9 +17,8 @@ End Rem
 ' * Custom autotiles
 ' * Fix arena bugs (leaving / joining rooms)
 ' * Fix kill announcements
-' * Add team markers
+' * Fix chat function
 ' * Change skill icon for advancements
-' * Skill advancement should work in network mode
 
 ' Strict
 SuperStrict
