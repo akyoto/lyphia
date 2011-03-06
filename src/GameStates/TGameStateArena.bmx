@@ -67,7 +67,7 @@ Type TGameStateArena Extends TGameState
 		
 		' Parties
 		For Local I:Int = 0 Until 2
-			Self.parties[I] = TParty.Create("Team " + (I + 1))
+			Self.parties[I] = TParty.Create(I, "Team " + (I + 1))
 		Next
 		
 		Self.parties[0].SetColor(255, 164, 0)
@@ -718,6 +718,7 @@ Type TServerFuncs
 				bcClient.streamMutex.Lock()
 					bcClient.stream.WriteByte(255)
 					bcClient.stream.WriteByte(bcClient.player.GetID())
+					bcClient.stream.WriteInt(RndSeed())
 					'bcClient.stream.WriteByte(client.server.clientList.length)
 					'For Local bcClientTmp:TLyphiaClient = EachIn client.server.clientList
 					'	bcClient.stream.WriteByte(bcClientTmp.player.GetID())
@@ -852,8 +853,8 @@ Type TClientFuncs
 		killer.SetKillCount(kills)
 		killed.SetDeathCount(deaths)
 		
-		Local nTileX:Int = gsInGame.map.GetStartTileX()
-		Local nTileY:Int = gsInGame.map.GetStartTileY()
+		Local nTileX:Int = gsInGame.map.GetStartTileX(killed.GetParty().GetID())
+		Local nTileY:Int = gsInGame.map.GetStartTileY(killed.GetParty().GetID())
 		killed.x = nTileX * gsInGame.map.GetTileSizeX()
 		killed.y = nTileY * gsInGame.map.GetTileSizeY()
 		
@@ -976,6 +977,9 @@ Type TClientFuncs
 	' StartGame
 	Function StartGame(room:TRoom)
 		Local playerID:Byte = room.stream.ReadByte()
+		Local seed:Int = room.stream.ReadInt()
+		
+		SeedRnd seed
 		
 		Rem
 		For Local I:Int = 0 Until 256

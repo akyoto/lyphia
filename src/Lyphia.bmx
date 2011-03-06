@@ -12,13 +12,13 @@ Rem
 End Rem
 
 ' TODO
+' * Fix first game.speed value bug
 ' * Fix msg list (TListBox)
 ' * SeedRnd set by host in network mode
 ' * Custom autotiles
 ' * Fix arena bugs (leaving / joining rooms)
 ' * Fix kill announcements
 ' * Fix chat function
-' * Change skill icon for advancements
 
 ' Strict
 SuperStrict

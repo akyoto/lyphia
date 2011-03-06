@@ -60,7 +60,7 @@ Type TTileMap
 	Field reduceZoomArtifacts:Int
 	
 	' Starting point for the player
-	Field startX:Int, startY:Int
+	Field startX:Int[], startY:Int[]
 	
 	' TODO: Remove hardcoded stuff
 	'Field topLeft:TImage
@@ -77,6 +77,8 @@ Type TTileMap
 		Self.cost = TGameMap.Create(Self.width, Self.height, 1)
 		Self.byteToTile = New TTileType[Self.layers, MAX_TILES]
 		Self.enemySpawns = New TList[Self.height]
+		Self.startX = New Int[4]
+		Self.startY = New Int[4]
 		Self.originX = 0
 		Self.originY = 0
 		Self.scaleX = 1.0
@@ -244,6 +246,7 @@ Type TTileMap
 		Local esTileX:Int
 		Local esTileY:Int
 		Local esType:String
+		Local startPoints:Byte
 		Local stream:TStream
 		
 		Self.name = StripAll(file)
@@ -254,8 +257,15 @@ Type TTileMap
 		Self.width = stream.ReadInt()
 		Self.height = stream.ReadInt() 
 		
-		Self.startX = stream.ReadInt()
-		Self.startY = stream.ReadInt()
+		startPoints = stream.ReadByte()
+		
+		Self.startX = New Int[startPoints]
+		Self.startY = New Int[startPoints]
+		
+		For Local I:Int = 0 Until startPoints
+			Self.startX[I] = stream.ReadInt()
+			Self.startY[I] = stream.ReadInt()
+		Next
 		
 		Self.widthInPixels = Self.width * Self.tileSizeX
 		Self.heightInPixels = Self.height * Self.tileSizeY
@@ -325,8 +335,12 @@ Type TTileMap
 		stream.WriteInt Self.width
 		stream.WriteInt Self.height
 		
-		stream.WriteInt Self.startX
-		stream.WriteInt Self.startY
+		stream.WriteByte Self.startX.length
+		
+		For Local I:Int = 0 Until Self.startX.length
+			stream.WriteInt Self.startX[I]
+			stream.WriteInt Self.startY[I]
+		Next
 		
 		' Tiles
 		For layer = 0 Until Self.layers
@@ -650,10 +664,12 @@ Type TTileMap
 	End Method
 	
 	' DrawStartTile
-	Method DrawStartTile(r:Int = 255, g:Int = 255, b:Int = 0, a:Float = 0.75) 
-		SetColor r, g, b
-		SetAlpha a
-		DrawRect Self.startX * Self.tileSizeX, Self.startY * Self.tileSizeY, Self.tileSizeX, Self.tileSizeY
+	Method DrawStartTiles(r:Int = 255, g:Int = 255, b:Int = 0, a:Float = 0.75)
+		For Local index:Int = 0 Until Self.startX.length
+			SetColor r, g, b
+			SetAlpha a
+			DrawRect Self.startX[index] * Self.tileSizeX, Self.startY[index] * Self.tileSizeY, Self.tileSizeX, Self.tileSizeY
+		Next
 	End Method
 	
 	' DrawPath
@@ -984,13 +1000,13 @@ Type TTileMap
 	End Method
 	
 	' GetStartX
-	Method GetStartTileX:Int()
-		Return Self.startX
+	Method GetStartTileX:Int(index:Int = 0)
+		Return Self.startX[index]
 	End Method
 	
 	' GetStartY
-	Method GetStartTileY:Int()
-		Return Self.startY
+	Method GetStartTileY:Int(index:Int = 0)
+		Return Self.startY[index]
 	End Method
 	
 	' GetTileSizeX
@@ -1216,9 +1232,9 @@ Type TTileMap
 	End Method
 	
 	' SetStartTile
-	Method SetStartTile(x:Int, y:Int)
-		Self.startX = x
-		Self.startY = y
+	Method SetStartTile(index:Int, x:Int, y:Int)
+		Self.startX[index] = x
+		Self.startY[index] = y
 	End Method
 	
 	' Create

@@ -178,6 +178,9 @@ Type TGame
 			If Self.speed <> 0
 				If Self.speed > 40
 					Self.loggerDetail.Write("FrameTime = " + Self.frameTime)
+					If Self.speed > 80
+						Self.speed = 80
+					EndIf
 				EndIf
 				Self.gameState.Update()
 			Else

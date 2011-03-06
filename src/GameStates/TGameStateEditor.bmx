@@ -500,7 +500,10 @@ Type TGameStateEditor Extends TGameState
 		Self.tileMenu.AddMenuItem("popupFill", "Fill", TGameStateEditor.FillFunc)
 		Self.tileMenu.AddMenuItem("popupFillDiagonally", "Fill diagonally", TGameStateEditor.FillDiagonalFunc)
 		Self.tileMenu.AddMenuItem("popupErase", "Erase", TGameStateEditor.EraseFunc)
-		Self.tileMenu.AddMenuItem("popupSetStart", "Set start point", TGameStateEditor.SetStartTileFunc)
+		Self.tileMenu.AddMenuItem("popupSetStart1", "Set start point #1", TGameStateEditor.SetStartTile1Func)
+		Self.tileMenu.AddMenuItem("popupSetStart2", "Set start point #2", TGameStateEditor.SetStartTile2Func)
+		Self.tileMenu.AddMenuItem("popupSetStart3", "Set start point #3", TGameStateEditor.SetStartTile3Func)
+		Self.tileMenu.AddMenuItem("popupSetStart4", "Set start point #4", TGameStateEditor.SetStartTile4Func)
 		
 		Self.tileMenu.SetMenuItemIcon("popupAddScript", Self.scriptImg)
 		Self.tileMenu.SetMenuItemIcon("popupRemoveScript", Self.scriptImg)
@@ -584,7 +587,7 @@ Type TGameStateEditor Extends TGameState
 		
 		' Start view
 		If Self.viewStart
-			Self.map.DrawStartTile()
+			Self.map.DrawStartTiles()
 		EndIf
 		
 		' Scripts
@@ -1004,9 +1007,24 @@ Type TGameStateEditor Extends TGameState
 		game.SetGameStateByName("InGame")
 	End Function
 	
-	' SetStartTileFunc
-	Function SetStartTileFunc(widget:TWidget)
-		gsEditor.map.SetStartTile(gsEditor.savedX, gsEditor.savedY)
+	' SetStartTile1Func
+	Function SetStartTile1Func(widget:TWidget)
+		gsEditor.map.SetStartTile(0, gsEditor.savedX, gsEditor.savedY)
+	End Function
+	
+	' SetStartTile2Func
+	Function SetStartTile2Func(widget:TWidget)
+		gsEditor.map.SetStartTile(1, gsEditor.savedX, gsEditor.savedY)
+	End Function
+	
+	' SetStartTile3Func
+	Function SetStartTile3Func(widget:TWidget)
+		gsEditor.map.SetStartTile(2, gsEditor.savedX, gsEditor.savedY)
+	End Function
+	
+	' SetStartTile4Func
+	Function SetStartTile4Func(widget:TWidget)
+		gsEditor.map.SetStartTile(3, gsEditor.savedX, gsEditor.savedY)
 	End Function
 	
 	' CopyFunc

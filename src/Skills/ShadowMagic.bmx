@@ -355,7 +355,7 @@ Type TDarkHole Extends TShadowMagicInstance
 
 			TParticleTween.Create( ..
 				gsInGame.GetEffectGroup(Self.y),  ..
-				10000,  ..
+				2500,  ..
 				gsInGame.particleImgIce,..
 				Self.x , Self.y ,  ..
 				Self.x + CosFast[Pillar] * Rand(30, 125), Self.y - SinFast[Pillar] * Rand(30, 125) * perspectiveFactor,  ..

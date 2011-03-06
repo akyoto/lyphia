@@ -155,7 +155,7 @@ Type TGameStateInGame Extends TGameState
 			Self.player = TPlayer.Create("Yami")
 			
 			Self.parties = New TParty[1]
-			Self.parties[0] = TParty.Create("My party")
+			Self.parties[0] = TParty.Create(0, "My party")
 			Self.parties[0].Add(Self.player)
 		Else
 			Self.netWalkX = 0
@@ -1126,7 +1126,22 @@ Type TGameStateInGame Extends TGameState
 	' ChangeMap
 	Method ChangeMap(nMap:String)
 		Self.map.Load(FS_ROOT + "data/maps/" + nMap + ".map")
-		Self.MovePlayerToTile(Self.map.GetStartTileX(), Self.map.GetStartTileY())
+		
+		If Self.inNetworkMode
+			For Local I:Int = 0 Until Self.parties.length
+				Local party:TParty = Self.parties[I]
+				For Local player:TPlayer = EachIn party.GetMembersList()
+					If player = Self.player
+						MovePlayerToTile(Self.map.GetStartTileX(I), Self.map.GetStartTileY(I))
+					Else
+						player.x = Self.map.GetStartTileX(I) * Self.map.GetTileSizeX()
+						player.y = Self.map.GetStartTileY(I) * Self.map.GetTileSizeY()
+					EndIf
+				Next
+			Next
+		Else
+			MovePlayerToTile(Self.map.GetStartTileX(0), Self.map.GetStartTileY(0))
+		EndIf
 	End Method
 	
 	' Teleport
@@ -1151,15 +1166,11 @@ Type TGameStateInGame Extends TGameState
 	
 	' MovePlayerToTile
 	Method MovePlayerToTile(nTileX:Int, nTileY:Int)
-		For Local party:TParty = EachIn Self.parties
-			For Local player:TPlayer = EachIn party.GetMembersList()
-				player.x = nTileX * Self.map.GetTileSizeX()
-				player.y = nTileY * Self.map.GetTileSizeY()
-				Self.map.GetTileCoordsDirect(player.GetMidX(), player.y + player.img.height - 5, player.tileX, player.tileY)
-				Self.tileX = player.tileX
-				Self.tileY = player.tileY
-			Next
-		Next
+		Self.player.x = nTileX * Self.map.GetTileSizeX()
+		Self.player.y = nTileY * Self.map.GetTileSizeY()
+		Self.map.GetTileCoordsDirect(Self.player.GetMidX(), Self.player.y + player.img.height - 5, Self.player.tileX, Self.player.tileY)
+		Self.tileX = Self.player.tileX
+		Self.tileY = Self.player.tileY
 	End Method
 	
 	' DrawDamageNumbers

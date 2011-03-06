@@ -1,8 +1,6 @@
 
 ' TParty
 Type TParty
-	Global count:Int = 0
-	
 	Field id:Int
 	Field name:String
 	Field members:TList
@@ -11,12 +9,11 @@ Type TParty
 	Field castR:Int, castG:Int, castB:Int
 	
 	' Init
-	Method Init(nName:String)
+	Method Init(nID:Int, nName:String)
 		Self.name = nName
 		Self.members = CreateList()
 		
-		Self.id = count
-		count :+ 1
+		Self.id = nID
 	End Method
 	
 	' Add
@@ -61,6 +58,11 @@ Type TParty
 			Return False
 		EndIf
 		Return nEntity.GetParty() = Self
+	End Method
+	
+	' GetID
+	Method GetID:Int()
+		Return Self.id
 	End Method
 	
 	' GetKillCount
@@ -111,9 +113,9 @@ Type TParty
 	End Method
 	
 	' Create
-	Function Create:TParty(nName:String)
+	Function Create:TParty(nID:Int, nName:String)
 		Local party:TParty = New TParty
-		party.Init(nName)
+		party.Init(nID, nName)
 		Return party
 	End Function
 End Type
