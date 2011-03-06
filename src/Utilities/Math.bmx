@@ -51,6 +51,18 @@ Function RectInRect:Int(x:Int, y:Int, width:Int, height:Int, x2:Int, y2:Int, wid
 	Return True
 End Function
 
+' CircleInRect
+Function CircleInRect:Int(cx:Int, cy:Int, cr:Int, x1:Int, y1:Int, w:Int, h:Int)
+	Local cr2:Int = cr * cr
+	
+	If PointInRect(cx, cy, x1 - cr, y1 - cr, cr, cr) Then Return DistanceSq2(cx - x1, cy - y1) <= cr2
+	If PointInRect(cx, cy, x1 - cr, y1 + h, cr, cr) Then Return DistanceSq2(cx - x1, cy - y1 - h) <= cr2
+	If PointInRect(cx, cy, x1 + w, y1 - cr, cr, cr) Then Return DistanceSq2(cx - x1 - w, cy - y1) <= cr2
+	If PointInRect(cx, cy, x1 + w, y1 + h, cr, cr) Then Return DistanceSq2(cx - x1 - w, cy - y1 - h) <= cr2
+	
+	Return PointInRect(cx, cy, x1 - cr, y1 - cr, w + 2 * cr, h + 2 * cr)
+End Function
+
 ' FloatToReadableString
 Function FloatToReadableString:String(val:Float, numbers:Int = 1)
 	Local txt:String = val
@@ -84,18 +96,6 @@ Function BoolToYesNo:String(bool:Int)
 	EndIf
 	
 	Return "No"
-End Function
-
-' CircleInRect
-Function CircleInRect:Int(cx:Int, cy:Int, cr:Int, x1:Int, y1:Int, w:Int, h:Int)
-	Local cr2:Int = cr * cr
-	
-	If PointInRect(cx, cy, x1 - cr, y1 - cr, cr, cr) Then Return DistanceSq2(cx - x1, cy - y1) <= cr2
-	If PointInRect(cx, cy, x1 - cr, y1 + h, cr, cr) Then Return DistanceSq2(cx - x1, cy - y1 - h) <= cr2
-	If PointInRect(cx, cy, x1 + w, y1 - cr, cr, cr) Then Return DistanceSq2(cx - x1 - w, cy - y1) <= cr2
-	If PointInRect(cx, cy, x1 + w, y1 + h, cr, cr) Then Return DistanceSq2(cx - x1 - w, cy - y1 - h) <= cr2
-	
-	Return PointInRect(cx, cy, x1 - cr, y1 - cr, w + 2 * cr, h + 2 * cr)
 End Function
 
 ' FloatNormalised

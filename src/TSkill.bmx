@@ -28,6 +28,12 @@ Type TSkill Extends TAction
 	Field castStarted:Int
 	Field canMoveWhileCasting:Int
 	
+	' Following skill
+	Field followUpSkill:TSkill
+	Field preSkill:TSkill
+	Field hasBeenAdvanced:Int
+	Field slot:TSkillSlot
+	
 	' Init
 	Method Init(nCaster:TEntity)	'skillName:String, 
 		Self.hpCostAbs = 0
@@ -61,6 +67,13 @@ Type TSkill Extends TAction
 		EndIf
 		
 		Self.img = game.imageMgr.Get(skillName)
+		Self.followUpSkill = Null
+	End Method
+	
+	' SetFollowUpSkill
+	Method SetFollowUpSkill(skill:TSkill)
+		Self.followUpSkill = skill
+		skill.preSkill = Self
 	End Method
 	
 	' Exec
@@ -131,14 +144,34 @@ Type TSkill Extends TAction
 		Self.castStarted:+byTime
 	End Method
 	
+	' SetSlot
+	Method SetSlot(nSlot:TSkillSlot)
+		Self.slot = nSlot
+	End Method
+	
 	' SetCaster
 	Method SetCaster(nCaster:TEntity)
 		Self.caster = nCaster
 	End Method
 	
 	' Start
-	Method Start() 
+	Method Start()
 		If Self.caster <> Null And Self.caster.HasEnoughMP(Self.mpCostAbs, Self.mpCostRel)
+			' Skill levels / advancements
+			If Self.followUpSkill <> Null And Self.slot.GetTriggeredSkillAdvanceTrigger() <> Null
+				Self.followUpSkill.Exec(Null)
+				Self.hasBeenAdvanced = True
+				
+				' Set the flag for the pre skill to False
+				If Self.preSkill <> Null
+					Self.preSkill.hasBeenAdvanced = False
+				EndIf
+				
+				Return
+			Else
+				Self.hasBeenAdvanced = False
+			EndIf
+			
 			Self.lastCast = MilliSecs()
 			Self.caster.UseMP(Self.mpCostAbs, Self.mpCostRel)
 			Self.Use()

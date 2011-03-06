@@ -9,7 +9,7 @@ Import BRL.Max2D
 Import "Global.bmx"
 Import "TGame.bmx"
 Import "TLua.bmx"
-Import "TSlot.bmx"
+Import "TSkillSlot.bmx"
 Import "TDamageView.bmx"
 Import "TINILoader.bmx"
 Import "TAnimation.bmx"
@@ -84,7 +84,7 @@ Type TEntity
 	Field partyLink:TLink
 	
 	' Skills
-	Field techSlots:TSlot[]
+	Field techSlots:TSkillSlot[]
 	
 	' Buffs
 	Field buffs:TBuffContainer
@@ -349,6 +349,31 @@ Type TEntity
 	' SetImageFile
 	Method SetImageFile(nFile:String) Abstract
 	
+	' SetSlotSkill
+	Method SetSlotSkill(num:Int, skillName:String)
+		Local skill:TSkill
+		
+		Try
+			'skill = TSkill.Create(skillName, Self)
+			skill = TSkill(CreateObjectFromClass("S" + skillName))
+			skill.Init(Self)
+		Catch a:String
+			Print "Skill '" + skillName + "' does not exist."
+			End
+		Catch luaError:Object
+			Print "Lua error: " + luaError.ToString()
+			End
+		End Try
+		
+		Self.techSlots[num] = TSkillSlot.Create(skill)
+		skill.SetSlot(Self.techSlots[num])
+	End Method
+	
+	' AddSlotTrigger
+	Method AddSlotTrigger(num:Int, trigger:TTrigger)
+		Self.techSlots[num].AddTrigger(trigger)
+	End Method
+	
 	' Update
 	Method Update() Abstract
 	
@@ -385,31 +410,7 @@ Type TEntity
 	
 	' CreateSkillSlots
 	Method CreateSkillSlots(num:Int)
-		Self.techSlots = New TSlot[num]
-	End Method
-	
-	' SetSlotSkill
-	Method SetSlotSkill(num:Int, skillName:String)
-		Local skill:TSkill
-		
-		Try
-			'skill = TSkill.Create(skillName, Self)
-			skill = TSkill(CreateObjectFromClass("S" + skillName))
-			skill.Init(Self)
-		Catch a:String
-			Print "Skill '" + skillName + "' does not exist."
-			End
-		Catch luaError:Object
-			Print "Lua error: " + luaError.ToString()
-			End
-		End Try
-		
-		Self.techSlots[num] = TSlot.Create(skill)
-	End Method
-	
-	' AddSlotTrigger
-	Method AddSlotTrigger(num:Int, trigger:TTrigger)
-		Self.techSlots[num].AddTrigger(trigger)
+		Self.techSlots = New TSkillSlot[num]
 	End Method
 	
 	' Draw

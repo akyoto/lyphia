@@ -152,7 +152,7 @@ Type TGameStateInGame Extends TGameState
 		game.logger.Write("Initializing player")
 		
 		If Self.inNetworkMode = False
-			Self.player = TPlayer.Create("Kimiko")
+			Self.player = TPlayer.Create("Yami")
 			
 			Self.parties = New TParty[1]
 			Self.parties[0] = TParty.Create("My party")
@@ -215,6 +215,9 @@ Type TGameStateInGame Extends TGameState
 		For Local index:Int = 0 Until Self.player.techSlots.length
 			Self.player.techSlots[index].AddTrigger(TKeyTrigger.Create(KEY_1 + index))
 			Self.player.techSlots[index].AddTrigger(TJoyKeyTrigger.Create(index))
+			
+			Self.player.techSlots[index].AddSkillAdvanceTrigger(TKeyTrigger.Create(KEY_1 + index, True))
+			Self.player.techSlots[index].AddSkillAdvanceTrigger(TJoyKeyTrigger.Create(index, True))
 		Next
 		
 		' GUI
@@ -233,6 +236,7 @@ Type TGameStateInGame Extends TGameState
 		Self.grpPostEffects = TParticleGroup.Create()
 		Self.grpGuiEffects = TParticleGroup.Create()
 		
+		' Effect groups
 		For Local I:Int = 0 Until Self.map.height
 			Self.grpSkillEffects[I] = TParticleGroup.Create()
 		Next
@@ -552,7 +556,7 @@ Type TGameStateInGame Extends TGameState
 			DrawRectOutline skillBox.GetX() - 1, skillBox.GetY(), skillBox.GetWidth() + 1, skillBox.GetHeight()
 			
 			' TODO: Remove hardcoded stuff
-			Local keyStr:String = "12345678QWEFG"
+			Local keyStr:String = "1234567890QWERASDF"
 			SetColor 255, 255, 255
 			DrawText Chr(keyStr[I]), skillBox.GetX() + 3, skillBox.GetY() + 3
 			
@@ -871,7 +875,10 @@ Type TGameStateInGame Extends TGameState
 						EndIf
 						
 						skill.Start()
-						player.EndCast()
+						
+						If skill.hasBeenAdvanced = False
+							player.EndCast()
+						EndIf
 					EndIf
 				EndIf
 			Next

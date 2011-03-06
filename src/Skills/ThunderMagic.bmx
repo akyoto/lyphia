@@ -10,7 +10,7 @@ Type TThunderSphere Extends TThunderMagicInstance
 		Self.degree = Self.caster.GetDegree()
 		Self.maxRunTime = 750
 		
-		Self.dmg = 100
+		Self.dmg = 120
 	End Method
 	
 	' Run
@@ -154,7 +154,7 @@ Type TChainLightning Extends TThunderMagicInstance
 		
 		Self.maxRunTime = 250
 		
-		Self.dmg = Rand(3, 5)
+		Self.dmg = Rand(5, 7)
 		Self.dmgInterval = 500
 		Self.lastHit = 0
 	End Method

@@ -370,6 +370,8 @@ Type SMeteor Extends TFireMagic
 	' Init
 	Method Init(nCaster:TEntity) 
 		Super.Init(nCaster)
+		
+		Self.SetFollowUpSkill(SMeteorRain.Create(nCaster))
 	End Method
 	
 	' Cast
@@ -532,3 +534,195 @@ Type SMeteorRain Extends TFireMagic
 		Return skill
 	End Function
 End Type
+
+' SInferno
+Type SInferno Extends TFireMagic
+	' Init
+	Method Init(nCaster:TEntity) 
+		Super.Init(nCaster)
+	End Method
+	
+	' Cast
+	Method Cast()
+		Self.caster.Cast(Self)
+		
+		Local degree:Int
+		For Local i:Int = 0 To game.speed / 8
+			degree = Rand(0, 359)
+			TParticleTween.Create(..
+				gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..
+				250,..
+				gsInGame.particleImg,..
+				Self.caster.GetMidX(), Self.caster.GetMidY(),  ..
+				Self.caster.GetMidX() + CosFast[degree] * Rand(5, 10), Self.caster.GetMidY() + SinFast[degree] * Rand(5, 10),  ..
+				0.5, 0.1,..
+				0, 360,..
+				0.5, 0.75,..
+				0.5, 0.75,..
+				255, 0, 0,..
+				192, 180, 160..
+				..
+			)
+		Next
+	End Method
+	
+	' Use
+	Method Use()
+		gsInGame.chanEffects.Play("Inferno")
+		
+		For Local I:Int = 1 To 3
+			TMeteorRain.Create(Self.caster, Self.caster.GetMidX(), Self.caster.GetMidY(), 300)
+		Next
+	End Method
+	
+	' GetName
+	Method GetName:String() 
+		' TODO: Localization
+		Return "Inferno"
+	End Method
+	
+	' GetDescription
+	Method GetDescription:String()
+		' TODO: Localization
+		Return "Meteors are falling every 0.1 seconds for 3 seconds on a huge area around you."
+	End Method
+	
+	' Create
+	Function Create:TSkill(nCaster:TEntity)
+		Local skill:TSkill = New SMeteorRain
+		skill.Init(nCaster)
+		Return skill
+	End Function
+End Type
+
+' TFireNuclease
+Type TFireNuclease Extends TFireMagicInstance
+	Field degree:Int
+	
+	' Init
+	Method Init(castedBy:TEntity)
+		Super.InitInstance(castedBy)
+		
+		Self.degree = Self.caster.GetDegree()
+		Self.maxRunTime = 750
+		
+		Self.dmg = Rand(30, 40)
+	End Method
+	
+	' Run
+	Method Run()
+		If Self.GetRunTime() > Self.maxRunTime
+			Self.Remove()
+		EndIf
+		
+		Self.x:+CosFastSec(Self.degree) * 1.25 * game.speed
+		Self.y:-SinFastSec(Self.degree) * 1.25 * game.speed
+		
+		' TODO: Remove hardcoded stuff
+		Local pDegree:Int
+		Local direction:Int
+		Local damping:Float
+		Local fireOffsetCos:Float
+		Local fireOffsetSin:Float
+		
+		For Local I:Int = 0 To game.speed
+			pDegree = Rand(0, 359)
+			direction = ((I Mod 2) * 2 - 1) ' -1 or 1 depending on I
+			damping = (1.0 - Self.GetRunTime() / Float(maxRunTime))
+			damping = damping * damping
+			fireOffsetCos = -CosFastSec(Self.degree) * (I / Float(game.speed + 0.001)) * game.speed + damping * CosFastSec(Self.GetRunTime() + 90) * 24 * direction
+			fireOffsetSin = SinFastSec(Self.degree) * (I / Float(game.speed + 0.001)) * game.speed + damping * -SinFastSec(Self.GetRunTime()) * 96 * direction * perspectiveFactor
+			
+			TParticleTween.Create(..
+				gsInGame.GetEffectGroup(Self.y + fireOffsetSin),..
+				200,..
+				gsInGame.particleImg,..
+				Self.x + fireOffsetCos, Self.y + SinFastSec(Self.degree) * (I / Float(game.speed)) * game.speed + fireOffsetSin,  ..
+				Self.x + fireOffsetCos + CosFast[pDegree] * Rand(5, 20), Self.y + fireOffsetSin + SinFast[pDegree] * Rand(5, 20),  ..
+				0.5, 0.1,..
+				0, 360,..
+				0.5, 0.75,..
+				0.5, 0.75,..
+				255, 128 + Rand(0, 127) * direction, 0,..
+				192, 180, 160..
+				..
+			)
+		Next
+		
+		' Collision
+		Self.CheckRectCollision(Self.x - 3, Self.y - 3, 6, 6)
+	End Method
+	
+	' OnHit
+	Method OnHit:Int()
+		TBurnDeBuff.Create(Self.caster, Self.target, 6000, 5, 2000)
+		Self.Remove()
+		Return True
+	End Method
+	
+	' Create
+	Function Create:TFireNuclease(castedBy:TEntity)
+		Local skill:TFireNuclease = New TFireNuclease
+		skill.Init(castedBy)
+		Return skill
+	End Function
+End Type
+
+' SFireNuclease
+Type SFireNuclease Extends TFireMagic
+	' Init
+	Method Init(nCaster:TEntity) 
+		Super.Init(nCaster)
+	End Method
+	
+	' Cast
+	Method Cast()
+		Self.caster.Cast(Self)
+		
+		Local pDegree:Int
+		For Local i:Int = 0 To game.speed / 8
+			pDegree = Rand(0, 359)
+			TParticleTween.Create(..
+				gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..
+				250,..
+				gsInGame.particleImg,..
+				Self.caster.GetMidX(), Self.caster.GetMidY(),  ..
+				Self.caster.GetMidX() + CosFast[pDegree] * Rand(5, 10), Self.caster.GetMidY() + SinFast[pDegree] * Rand(5, 10),  ..
+				0.5, 0.1,..
+				0, 360,..
+				0.5, 0.75,..
+				0.5, 0.75,..
+				255, 0, 0,..
+				192, 180, 160..
+				..
+			)
+		Next
+	End Method
+	
+	' Use
+	Method Use()
+		gsInGame.chanEffects.Play("FireNuclease")
+		
+		TFireNuclease.Create(Self.caster)
+	End Method
+	
+	' GetName
+	Method GetName:String() 
+		' TODO: Localization
+		Return "Fire Nuclease"
+	End Method
+	
+	' GetDescription
+	Method GetDescription:String() 
+		' TODO: Localization
+		Return "TODO"
+	End Method
+	
+	' Create
+	Function Create:TSkill(nCaster:TEntity)
+		Local skill:TSkill = New SFireNuclease
+		skill.Init(nCaster)
+		Return skill
+	End Function
+End Type
+

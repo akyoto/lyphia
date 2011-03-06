@@ -18,6 +18,7 @@ End Rem
 ' * Fix arena bugs (leaving / joining rooms)
 ' * Fix kill announcements
 ' * Add team markers
+' * Change skill icon for advancements
 
 ' Strict
 SuperStrict

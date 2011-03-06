@@ -66,7 +66,7 @@ Type SRecovery Extends TLightMagic
 	End Method
 	
 	' GetDescription
-	Method GetDescription:String() 
+	Method GetDescription:String()
 		' TODO: Localization
 		Return "Recovers " + Self.heal + " HP every " + MSToSeconds(Self.healInterval) + " seconds for " + MSToSeconds(Self.lifeTime) + " seconds."
 	End Method
