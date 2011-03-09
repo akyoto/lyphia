@@ -15,6 +15,11 @@ Type TBuffContainer
 		Self.onRemove = Null
 	End Method
 	
+	' Clear
+	Method Clear()
+		Self.list.Clear()
+	End Method
+	
 	' Add
 	Method Add(buff:TBuff)
 		buff.link = Self.list.AddLast(buff)

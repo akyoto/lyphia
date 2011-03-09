@@ -47,7 +47,10 @@ Type TGameStateArena Extends TGameState
 	Field clientList:TListBox[2]
 	Field teamChange:TButton[2]
 	Field roomOptions:TGroup
+	Field modeList:TListBox
+	Field arenaModeIndex:Byte
 	
+	Field arenaModes:TArenaMode[1]
 	Field parties:TParty[2]
 	Field player:TPlayer
 	Field nickName:String
@@ -61,25 +64,31 @@ Type TGameStateArena Extends TGameState
 		' Resources
 		Self.InitResources()
 		
+		' Parties
+		If Self.parties[0] = Null
+			For Local I:Int = 0 Until 2
+				Self.parties[I] = TParty.Create(I, "Team " + (I + 1))
+			Next
+		EndIf
+		
 		' GUI
 		game.logger.Write("Initializing GUI")
 		Self.InitGUI()
 		
-		' Parties
-		For Local I:Int = 0 Until 2
-			Self.parties[I] = TParty.Create(I, "Team " + (I + 1))
+		' Modes
+		Self.modeList.Clear()
+		Self.arenaModes[0] = TDeathMatchByKills.Create(8)
+		
+		' Add modes
+		For Local arenaMode:TArenaMode = EachIn Self.arenaModes
+			arenaMode.SetParties(Self.parties)
+			Self.modeList.AddItem(arenaMode.GetName())
 		Next
 		
 		Self.parties[0].SetColor(255, 164, 0)
 		Self.parties[0].SetCastColor(255, 224, 0)
 		Self.parties[1].SetColor(0, 164, 255)
 		Self.parties[1].SetCastColor(0, 224, 255)
-		
-		' Reset
-		Self.room = Null
-		Self.server = Null
-		Self.player = Null
-		Self.startGame = False
 		
 		' Name
 		Self.nickName = "Warrior_" + Rand(1000, 9999)
@@ -108,33 +117,38 @@ Type TGameStateArena Extends TGameState
 		
 		game.imageMgr.SetFlags(FILTEREDIMAGE)
 		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/arena/")
+		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/arena/modes/")
 		
 		Self.guiFont = game.fontMgr.Get("ArenaGUIFont")
 	End Method
 	
 	' InitGUI
 	Method InitGUI()
-		If Self.gui = Null
+		If Self.guiMutex = Null
 			Self.guiMutex = CreateMutex()
-			Self.guiMutex.Lock()
-				Self.gui = TGUI.Create()
-				
-				Local bg:TImageBox = TImageBox.Create("arenaBG", game.imageMgr.Get("arena-background"))
-				bg.SetSize(1.0, 1.0)
-				Self.gui.Add(bg)
-				
-				Self.InitMenuGUI()
-				Self.InitCharacterGUI()
-				Self.InitRoomGUI()
-				
-				' Cursors
-				Self.gui.SetCursor("default")
-				HideMouse()
-				
-				' Apply font to all widgets
-				Self.gui.SetFont(Self.guiFont)
-			Self.guiMutex.Unlock()
 		EndIf
+		
+		Self.guiMutex.Lock()
+			Self.gui = TGUI.Create()
+			
+			Local bg:TImageBox = TImageBox.Create("arenaBG", game.imageMgr.Get("arena-background"))
+			bg.SetSize(1.0, 1.0)
+			Self.gui.Add(bg)
+			
+			Self.InitMenuGUI()
+			Self.InitCharacterGUI()
+			Self.InitRoomGUI()
+		
+			' Cursors
+			Self.gui.SetCursor("default")
+			HideMouse()
+			
+			' Apply font to all widgets
+			Self.gui.SetFont(Self.guiFont)
+		Self.guiMutex.Unlock()
+		
+		Self.UpdateGUIState()
+		Self.UpdateParties()
 	End Method
 	
 	' InitMenuGUI
@@ -208,6 +222,8 @@ Type TGameStateArena Extends TGameState
 		
 		' Msg list
 		Self.msgList = TListBox.Create("msgList")
+		Self.msgList.SetPosition(0, 0)
+		Self.msgList.SetPositionAbs(0, 0)
 		Self.msgList.SetSize(0.8, 0.8)
 		Self.msgList.SetSizeAbs(0, -24 - padding)
 		Self.roomContainer.Add(Self.msgList)
@@ -252,14 +268,34 @@ Type TGameStateArena Extends TGameState
 		Self.roomOptions.SetSizeAbs(0, -padding)
 		Self.roomContainer.Add(Self.roomOptions)
 		
+		' Mode list
+		Self.modeList = TListBox.Create("modeList")
+		Self.modeList.SetPosition(0.05, 0.25)
+		Self.modeList.SetSize(0.25, 0.5)
+		Self.modeList.onItemChange = TGameStateArena.ChangeArenaModeFunc
+		Self.roomOptions.Add(Self.modeList)
+		
 		' Go
 		Local goButton:TButton = TButton.Create("goButton", "Start")
-		goButton.SetSize(1.0, 1.0)
+		goButton.SetPosition(0.75, 0.25)
+		goButton.SetSize(0.20, 0.5)
 		goButton.onClick = TGameStateArena.StartFunc
 		Self.roomOptions.Add(goButton)
 		
 		' Hide room container
 		Self.roomContainer.SetVisible(False)
+	End Method
+	
+	' UpdateParties
+	Method UpdateParties()
+		Self.guiMutex.Lock()
+			For Local I:Int = 0 Until 2
+				Self.clientList[I].Clear()
+				For Local member:TEntity = EachIn Self.parties[I].GetMembersList()
+					Self.clientList[I].AddItem member.GetName()
+				Next
+			Next
+		Self.guiMutex.UnLock()
 	End Method
 	
 	' Update
@@ -269,6 +305,9 @@ Type TGameStateArena Extends TGameState
 		
 		' Update frame rate
 		Self.frameCounter.Update()
+		
+		' Always select the same item
+		Self.modeList.SelectItem(Self.arenaModeIndex)
 		
 		' GUI update
 		Self.guiMutex.Lock()
@@ -293,9 +332,7 @@ Type TGameStateArena Extends TGameState
 		
 		' Change to GS InGame
 		If Self.startGame = True
-			Self.startGame = False
-			gsInGame.InitNetworkMode(gsArena.player, gsArena.parties, gsArena.room, gsArena.server, gsArena.gui)
-			game.SetGameStateByName("InGame")
+			Self.StartNetworkMode()
 		EndIf
 		
 		' Quit
@@ -353,6 +390,12 @@ Type TGameStateArena Extends TGameState
 				characterName = Self.charList.GetItemText(0)
 			EndIf
 			
+			' Clear parties
+			For Local I:Int = 0 Until 2
+				Self.parties[I].Clear()
+			Next
+			Self.UpdateParties()
+			
 			Self.room.streamMutex.Lock()
 				Self.room.stream.WriteByte(1)
 				Self.room.stream.WriteLine(characterName)
@@ -381,6 +424,11 @@ Type TGameStateArena Extends TGameState
 			Self.loggerServer.Write("Initializing server at port " + TGameStateArena.SERVER_PORT + " for room '" + nName + "'")
 			Self.server = TServer.Create(TGameStateArena.SERVER_PORT, Self.loggerServer)
 			Self.loggerServer.Write("Server successfully initialized.")
+			
+			' Clear parties
+			For Local I:Int = 0 Until 2
+				Self.parties[I].Clear()
+			Next
 		Catch exception:Object
 			Self.loggerServer.Write("Runtime error: " + exception.ToString())
 		End Try
@@ -393,10 +441,6 @@ Type TGameStateArena Extends TGameState
 			Self.room = Null
 			
 			Self.guiMutex.Lock()
-				For Local I:Int = 0 Until 2
-					Self.clientList[I].Clear()
-					Self.parties[I].Clear()
-				Next
 				Self.msgList.Clear()
 			Self.guiMutex.Unlock()
 		EndIf
@@ -405,6 +449,13 @@ Type TGameStateArena Extends TGameState
 			Self.server.Remove()
 			Self.server = Null
 		EndIf
+		
+		' Clear parties
+		For Local I:Int = 0 Until 2
+			Self.parties[I].Clear()
+		Next
+		
+		Self.UpdateParties()
 	End Method
 	
 	' Remove
@@ -429,6 +480,13 @@ Type TGameStateArena Extends TGameState
 	' ToString
 	Method ToString:String()
 		Return "Arena"
+	End Method
+	
+	' StartNetworkMode
+	Method StartNetworkMode()
+		Self.startGame = False
+		gsInGame.InitNetworkMode(gsArena.player, gsArena.parties, gsArena.room, gsArena.server, gsArena.gui, gsArena.arenaModes[gsArena.arenaModeIndex])
+		game.SetGameStateByName("InGame")
 	End Method
 	
 	' JoinRoomFunc
@@ -485,6 +543,20 @@ Type TGameStateArena Extends TGameState
 		EndIf
 	End Function
 	
+	' ChangeArenaModeFunc
+	Function ChangeArenaModeFunc(widget:TWidget)
+		If gsArena.server <> Null
+			Local mode:Int = gsArena.modeList.GetSelectedItem()
+			
+			If mode >= 0 And mode <> gsArena.arenaModeIndex
+				gsArena.room.streamMutex.Lock()
+					gsArena.room.stream.WriteByte(5)
+					gsArena.room.stream.WriteByte(mode)
+				gsArena.room.streamMutex.Unlock()
+			EndIf
+		EndIf
+	End Function
+	
 	' StartFunc
 	Function StartFunc(widget:TWidget)
 		If gsArena.server <> Null
@@ -509,12 +581,14 @@ Type TServerFuncs
 		TServerMsgHandler.clientDisconnectFunc = TServerFuncs.ClientDisconnected
 		TServerMsgHandler.SetFunction(1, TServerFuncs.ClientJoined)
 		TServerMsgHandler.SetFunction(4, TServerFuncs.ChangeParty)
+		TServerMsgHandler.SetFunction(5, TServerFuncs.ChangeArenaMode)
 		TServerMsgHandler.SetFunction(20, TServerFuncs.ChatMsg)
 		TServerMsgHandler.SetFunction(100, TServerFuncs.MovePlayer)
 		TServerMsgHandler.SetFunction(101, TServerFuncs.LockPlayerDirection)
 		TServerMsgHandler.SetFunction(110, TServerFuncs.StartSkillCast)
 		TServerMsgHandler.SetFunction(111, TServerFuncs.EndSkillCast)
 		TServerMsgHandler.SetFunction(230, TServerFuncs.PingCheck)
+		'TServerMsgHandler.SetFunction(254, TServerFuncs.EndGame)		' This is done in GSInGame.UpdateArena()
 		TServerMsgHandler.SetFunction(255, TServerFuncs.StartGame)
 	End Function
 	
@@ -582,8 +656,23 @@ Type TServerFuncs
 			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
 				bcClient.streamMutex.Lock()
 					bcClient.stream.WriteByte(4)
-					bcClient.stream.WriteLine(client.player.GetName())
+					bcClient.stream.WriteByte(client.player.GetID())
 					bcClient.stream.WriteByte(team)
+				bcClient.streamMutex.Unlock()
+			Next
+		client.server.clientListMutex.Unlock()
+	End Function
+	
+	' ChangeArenaMode
+	Function ChangeArenaMode(client:TLyphiaClient)
+		Local mode:Byte = client.stream.ReadByte()
+		
+		' Notify other players
+		client.server.clientListMutex.Lock()
+			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
+				bcClient.streamMutex.Lock()
+					bcClient.stream.WriteByte(5)
+					bcClient.stream.WriteLine(mode)
 				bcClient.streamMutex.Unlock()
 			Next
 		client.server.clientListMutex.Unlock()
@@ -740,6 +829,7 @@ Type TClientFuncs
 		TClientMsgHandler.SetFunction(2, TClientFuncs.ClientDisconnected)
 		TClientMsgHandler.SetFunction(3, TClientFuncs.ClientList)
 		TClientMsgHandler.SetFunction(4, TClientFuncs.ChangeParty)
+		TClientMsgHandler.SetFunction(5, TClientFuncs.ChangeArenaMode)
 		TClientMsgHandler.SetFunction(20, TClientFuncs.ChatMsg)
 		TClientMsgHandler.SetFunction(30, TClientFuncs.KillPlayer)
 		TClientMsgHandler.SetFunction(50, TClientFuncs.SetHP)
@@ -748,6 +838,7 @@ Type TClientFuncs
 		TClientMsgHandler.SetFunction(110, TClientFuncs.StartSkillCast)
 		TClientMsgHandler.SetFunction(111, TClientFuncs.EndSkillCast)
 		TClientMsgHandler.SetFunction(230, TClientFuncs.PingCheck)
+		TClientMsgHandler.SetFunction(254, TClientFuncs.EndGame)
 		TClientMsgHandler.SetFunction(255, TClientFuncs.StartGame)
 	End Function
 	
@@ -779,8 +870,9 @@ Type TClientFuncs
 		gsArena.guiMutex.Lock()
 			gsArena.msgList.AddItem(name + " joined the room.")
 			gsArena.msgList.ScrollToMax()
-			gsArena.clientList[team].AddItem(name)
 		gsArena.guiMutex.Unlock()
+		
+		gsArena.UpdateParties()
 	End Function
 	
 	' ClientList
@@ -795,36 +887,43 @@ Type TClientFuncs
 		player.SetName(name)
 		gsArena.parties[team].Add(player)
 		
-		gsArena.guiMutex.Lock()
-			gsArena.clientList[team].AddItem(name)
-		gsArena.guiMutex.Unlock()
+		gsArena.UpdateParties()
 	End Function
 	
 	' ChangeParty
 	Function ChangeParty(room:TRoom)
-		Local name:String = room.stream.ReadLine()
+		Local playerID:Byte = room.stream.ReadByte()
 		Local team:Byte = room.stream.ReadByte()
-		Local player:TEntity
 		
-		For Local I:Int = 0 Until 2
-			If I = team
-				Continue
-			EndIf
-			
-			player = gsArena.parties[I].GetByName(name)
-			If player <> Null
-				If gsArena.parties[team].Contains(player) = False
-					player.SetParty(gsArena.parties[team])
-					
-					gsArena.guiMutex.Lock()
-						gsArena.clientList[I].RemoveItemByText(name)
-						gsArena.clientList[team].AddItem(name)
-						gsArena.msgList.AddItem(name + " moved to Team " + (team + 1) + ".")
-						gsArena.msgList.ScrollToMax()
-					gsArena.guiMutex.Unlock()
-				EndIf
+		Local player:TPlayer = TPlayer.players[playerID]
+		
+		For Local I:Int = 0 Until 256
+			If TPlayer.players[I]
+				Print I + " -> " + TPlayer.players[I].GetName()
 			EndIf
 		Next
+		
+		If player <> Null
+			If gsArena.parties[team].Contains(player) = False
+				player.SetParty(gsArena.parties[team])
+				
+				gsArena.guiMutex.Lock()
+					gsArena.msgList.AddItem(player.GetName() + " moved to Team " + (team + 1) + ".")
+					gsArena.msgList.ScrollToMax()
+				gsArena.guiMutex.Unlock()
+				
+				gsArena.UpdateParties()
+			EndIf
+		EndIf
+	End Function
+	
+	' ChangeArenaMode
+	Function ChangeArenaMode(room:TRoom)
+		Local mode:Byte = room.stream.ReadByte()
+		
+		gsArena.guiMutex.Lock()
+			gsArena.arenaModeIndex = mode
+		gsArena.guiMutex.Unlock()
 	End Function
 	
 	' ChatMsg
@@ -974,6 +1073,13 @@ Type TClientFuncs
 		End Rem
 	End Function
 	
+	' EndGame
+	Function EndGame(room:TRoom)
+		gsArena.startGame = False
+		gsInGame.returnToArena = True
+		gsInGame.arenaMode.Reset()
+	End Function
+	
 	' StartGame
 	Function StartGame(room:TRoom)
 		Local playerID:Byte = room.stream.ReadByte()
@@ -1002,9 +1108,10 @@ Type TClientFuncs
 		gsArena.guiMutex.Lock()
 			gsArena.msgList.AddItem(name + " left the room.")
 			gsArena.msgList.ScrollToMax()
-			gsArena.clientList[team].RemoveItemByText(name)
 			gsArena.parties[team].RemoveByName(name)
 		gsArena.guiMutex.Unlock()
+		
+		gsArena.UpdateParties()
 		
 		TPlayer.players[playerID].Remove()
 		

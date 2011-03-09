@@ -15,6 +15,7 @@ Import "../TEnemy.bmx"
 Import "../TTileMap.bmx"
 Import "../TINILoader.bmx"
 Import "../TSlot.bmx"
+Import "../TArenaMode.bmx"
 Import "../TDamageView.bmx"
 Import "../Multiplayer/TRoom.bmx"
 Import "../Multiplayer/TServer.bmx"
@@ -22,6 +23,7 @@ Import "../GUI/TGUI.bmx"
 Import "../Utilities/Math.bmx"
 Import "../Utilities/Graphics.bmx"
 Import "../Utilities/Reflection.bmx"
+Import "../ArenaModes/TDeathMatchByKills.bmx"
 
 ' Includes
 Include "../TSkillInstance.bmx"
@@ -46,6 +48,7 @@ Type TGameStateInGame Extends TGameState
 	Field currentScriptName:String
 	Field oldHP:Float
 	Field lastHPUpdate:Int
+	Field arenaMode:TArenaMode
 	
 	' Walk
 	Field walkX:Float
@@ -82,6 +85,7 @@ Type TGameStateInGame Extends TGameState
 	Field regionPreviewFont:TImageFont
 	Field playerTitleFont:TImageFont
 	Field inGameChatFont:TImageFont
+	Field arenaBroadcastFont:TImageFont
 	
 	Field skillView:TContainer
 	Field skillCastBar:TProgressBar
@@ -123,6 +127,8 @@ Type TGameStateInGame Extends TGameState
 	Field lastArenaUpdate:Int
 	Field lastPingCheck:Int
 	
+	Field returnToArena:Int
+	
 	' Init
 	Method Init()
 		'Self.inNetworkMode = False
@@ -152,7 +158,7 @@ Type TGameStateInGame Extends TGameState
 		game.logger.Write("Initializing player")
 		
 		If Self.inNetworkMode = False
-			Self.player = TPlayer.Create("Yami")
+			Self.player = TPlayer.Create("Zeypher")
 			
 			Self.parties = New TParty[1]
 			Self.parties[0] = TParty.Create(0, "My party")
@@ -253,6 +259,11 @@ Type TGameStateInGame Extends TGameState
 		' Music
 		'Local music:TSound = LoadSound(FS_ROOT + "data/music/Okary-0.4.ogg", SOUND_LOOP)
 		'PlaySound music
+		
+		' Should be the last call in Init
+		If Self.inNetworkMode
+			Self.arenaMode.Start()
+		EndIf
 	End Method
 	
 	' InitResources
@@ -291,6 +302,7 @@ Type TGameStateInGame Extends TGameState
 		Self.regionPreviewFont = game.fontMgr.Get("RegionFont")
 		Self.playerTitleFont = game.fontMgr.Get("PlayerTitleFont")
 		Self.inGameChatFont = game.fontMgr.Get("InGameChatFont")
+		Self.arenaBroadcastFont = game.fontMgr.Get("ArenaBroadcastFont")
 		
 		' Particles
 		Self.particleImg = game.imageMgr.Get("particle-main")
@@ -406,18 +418,25 @@ Type TGameStateInGame Extends TGameState
 	End Method
 	
 	' InitNetworkMode
-	Method InitNetworkMode(nPlayer:TPlayer, nParties:TParty[], nRoom:TRoom, nServer:TServer, nArenaGUI:TGUI)
+	Method InitNetworkMode(nPlayer:TPlayer, nParties:TParty[], nRoom:TRoom, nServer:TServer, nArenaGUI:TGUI, nArenaMode:TArenaMode)
 		Self.player = nPlayer
 		Self.room = nRoom
 		Self.server = nServer
 		Self.parties = nParties
 		Self.arenaGUI = nArenaGUI
+		Self.arenaMode = nArenaMode
 		
 		Self.inNetworkMode = True
 	End Method
 	
 	' Update
 	Method Update()
+		' Return to arena
+		If Self.returnToArena
+			Self.returnToArena = False
+			game.SetGameStateByName("Arena")
+		EndIf
+		
 		' Check whether game is paused
 		If Self.IsPaused()
 			If Self.pauseTextWritten > 1
@@ -835,7 +854,7 @@ Type TGameStateInGame Extends TGameState
 		End Rem
 		
 		' Adjust map offset
-		Self.map.SetOffset(Self.player.x - game.gfxWidthHalf, Self.player.y - game.gfxHeightHalf)
+		Self.map.SetOffset(Self.player.GetMidX() - game.gfxWidthHalf, Self.player.GetMidY() - game.gfxHeightHalf)
 		Self.map.LimitOffset()
 		
 		' Lock direction slot
@@ -1095,13 +1114,43 @@ Type TGameStateInGame Extends TGameState
 		EndIf
 		
 		' Ping check
-		If MilliSecs() - Self.lastPingCheck > 1000
-			room.streamMutex.Lock()
-				room.stream.WriteByte(230)
-			room.streamMutex.UnLock()
+		If Self.inNetworkMode
+			If MilliSecs() - Self.lastPingCheck > 1000
+				room.streamMutex.Lock()
+					room.stream.WriteByte(230)
+				room.streamMutex.UnLock()
+				
+				Self.pingSent = MilliSecs()
+				Self.lastPingCheck = MilliSecs()
+			EndIf
 			
-			Self.pingSent = MilliSecs()
-			Self.lastPingCheck = MilliSecs()
+			' Arena mode check
+			Self.arenaMode.Update()
+			If Self.arenaMode.HasEnded()
+				SetImageFont Self.arenaBroadcastFont
+				DrawTextCentered Self.arenaMode.GetWinnerParty().GetName() + " wins", game.gfxWidthHalf, game.gfxHeightHalf / 2
+				
+				If Self.server <> Null
+					If MilliSecs() - Self.arenaMode.GetEndTime() > 5000
+						' Send all clients
+						For Local client:TLyphiaClient = EachIn Self.server.clientList
+							client.streamMutex.Lock()
+								client.stream.WriteByte(254)
+							client.streamMutex.Unlock()
+						Next
+					EndIf
+				EndIf
+			Else
+				' Mode logo
+				If MilliSecs() - Self.arenaMode.GetStartTime() <= 3000
+					ResetMax2D()
+					
+					Local invAlpha:Float = (MilliSecs() - Self.arenaMode.GetStartTime()) / 3000.0
+					invAlpha = invAlpha * invAlpha
+					SetAlpha 1.0 - invAlpha
+					DrawImage Self.arenaMode.img, game.gfxWidthHalf, game.gfxHeightHalf / 2
+				EndIf
+			EndIf
 		EndIf
 	End Method
 	

@@ -265,6 +265,16 @@ Type TWidget Abstract
 		Return Self.list.IsEmpty()
 	End Method
 	
+	' Contains
+	Method Contains:Int(id:String)
+		Return Self.childs.Contains(id)
+	End Method
+	
+	' ContainsWidget
+	Method ContainsWidget:Int(widget:TWidget)
+		Return Self.childs.Contains(widget.GetID())
+	End Method
+	
 	' GetAffectingWidget
 	Method GetAffectingWidget:TWidget()
 		Return Self.affectingWidget

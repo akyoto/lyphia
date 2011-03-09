@@ -14,11 +14,12 @@ End Rem
 ' TODO
 ' * Fix first game.speed value bug
 ' * Fix msg list (TListBox)
-' * SeedRnd set by host in network mode
 ' * Custom autotiles
 ' * Fix arena bugs (leaving / joining rooms)
 ' * Fix kill announcements
 ' * Fix chat function
+' * More CC skills
+' * Map Hindernisse (beschwören)
 
 ' Strict
 SuperStrict

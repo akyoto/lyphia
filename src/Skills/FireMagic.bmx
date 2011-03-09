@@ -59,7 +59,7 @@ Type TFireBall Extends TFireMagicInstance
 	
 	' OnHit
 	Method OnHit:Int()
-		TBurnDeBuff.Create(Self.caster, Self.target, 6000, 5, 2000)
+		TBurnDeBuff.Create(Self.caster, Self.target, 12000, 5, 4000)
 		Self.Remove()
 		Return True
 	End Method
@@ -183,7 +183,7 @@ Type TFireBreath Extends TFireMagicInstance
 	
 	' OnHit
 	Method OnHit:Int()
-		TBurnDeBuff.Create(Self.caster, Self.target, 12000, 10, 2000)
+		TBurnDeBuff.Create(Self.caster, Self.target, 15000, 18, 3000)
 		'Self.Remove()
 		Return True
 	End Method
@@ -208,7 +208,7 @@ Type SFireBreath Extends TFireMagic
 		Self.caster.Cast(Self)
 		
 		Local pDegree:Int
-		For Local i:Int = 0 To game.speed / 8
+		For Local i:Int = 0 To game.speed / 2
 			pDegree = Rand(0, 359)
 			TParticleTween.Create(..
 				gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..

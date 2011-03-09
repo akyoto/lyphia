@@ -70,7 +70,11 @@ Type TPlayer Extends TEntity
 		' TODO: Remove hardcoded stuff
 		SetMaskColor 255, 255, 255
 		
-		Self.img = LoadAnimImage(FS_ROOT + "data/characters/" + nFile, 24, 32, 0, 24)
+		Local pixmap:TPixmap = LoadPixmap(FS_ROOT + "data/characters/" + nFile)
+		Local frameWidth:Int = pixmap.width / 6
+		Local frameHeight:Int = pixmap.height / 4
+		
+		Self.img = LoadAnimImage(pixmap, frameWidth, frameHeight, 0, 24)
 	End Method
 	
 	' SetMPEffectFunc

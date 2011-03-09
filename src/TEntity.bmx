@@ -114,11 +114,9 @@ Type TEntity
 		Self.animWalk = TAnimationWalk.Create()
 		Self.animCast = TAnimationCast.Create()
 		Self.animAttack = TAnimationAttack.Create()
-		Self.SetAnimation(Self.animWalk)
 		
-		' Buff containers
-		Self.buffs = TBuffContainer.Create()
-		Self.debuffs = TBuffContainer.Create()
+		' Reset
+		Self.Reset()
 		
 		' Lua
 		If luaFile.Length > 0
@@ -126,10 +124,27 @@ Type TEntity
 			Self.luaObject = Self.luaScript.CreateInstance(Self)
 			Self.luaObject.Invoke("init", Null)
 		EndIf
+	End Method
+	
+	' Reset
+	Method Reset()
+		' Animations
+		Self.SetAnimation(Self.animWalk)
+		
+		' Buff containers
+		Self.buffs = TBuffContainer.Create()
+		Self.debuffs = TBuffContainer.Create()
 		
 		' Direction
 		Self.SetDirectionLock(False)
 		Self.SetSpeedMultiplier(1.0)
+		
+		' Status
+		Self.hp = Self.maxHP
+		Self.mp = Self.maxMP
+		
+		' Others
+		Self.SetKillCount(0)
 	End Method
 	
 	' InitStatus
@@ -372,6 +387,16 @@ Type TEntity
 	' AddSlotTrigger
 	Method AddSlotTrigger(num:Int, trigger:TTrigger)
 		Self.techSlots[num].AddTrigger(trigger)
+	End Method
+	
+	' RemoveBuffs
+	Method RemoveBuffs(num:Int = -1)
+		Self.buffs.Clear()
+	End Method
+	
+	' RemoveDeBuffs
+	Method RemoveDeBuffs(num:Int = -1)
+		Self.debuffs.Clear()
 	End Method
 	
 	' Update

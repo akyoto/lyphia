@@ -189,7 +189,6 @@ Type STwilight Extends TShadowMagic
 	End Function
 End Type
 
-
 ' TArcaneShadowOrb2
 Type TArcaneShadowOrb2 Extends TShadowMagicInstance
 	Field degree:Int
@@ -217,28 +216,30 @@ Type TArcaneShadowOrb2 Extends TShadowMagicInstance
 		Self.x :+ CosFastSec(Self.degree) * Self.speed * game.speed
 		Self.y :- SinFastSec(Self.degree) * Self.speed * game.speed
 		
+		Local pDegree:Float
 		For Local spread:Int = 0 To 180 Step 20
 			If spread Mod 60 > 0
-		For Local I:Int = 0 To game.speed / 4
-			Local Pillar:Float = Rand(90 -22.5, 90+22.5)
-
-			TParticleTween.Create( ..
-				gsInGame.GetEffectGroup(Self.y),  ..
-				650,  ..
-				gsInGame.particleImgIce,..
-				Self.x +spread, Self.y +spread,  ..
-				Self.x + CosFast[Pillar] * Rand(30, 125)+spread, Self.y - SinFast[Pillar] * Rand(30, 125)+spread * perspectiveFactor,  ..
-				0.5, 0.01,  ..
-				0, 360,  ..
-				0.5, 1.75,  ..
-				0.5, 1.75,  ..
-				255, 255, 255,  ..
-				0, 0, 0 ..
-				..
-			)
+				For Local I:Int = 0 To game.speed / 4
+					pDegree = Rand(90 -22.5, 90+22.5)
+					
+					TParticleTween.Create( ..
+						gsInGame.GetEffectGroup(Self.y),  ..
+						650,  ..
+						gsInGame.particleImgIce,..
+						Self.x + spread, Self.y + spread,  ..
+						Self.x + CosFast[pDegree] * Rand(30, 125) + spread, Self.y - SinFast[pDegree] * Rand(30, 125) + spread * perspectiveFactor,  ..
+						0.5, 0.01,  ..
+						0, 360,  ..
+						0.5, 1.75,  ..
+						0.5, 1.75,  ..
+						255, 255, 255,  ..
+						0, 0, 0 ..
+						..
+					)
+				Next
+			End If	
 		Next
-		End If	
-		Next
+		
 		' Collision
 		If MilliSecs() - Self.lastHit >= 500
 			Self.CheckRectCollision(Self.x - 3, Self.y - 3, 6, 6)

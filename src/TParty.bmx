@@ -48,6 +48,7 @@ Type TParty
 	' Clear
 	Method Clear()
 		For Local entity:TEntity = EachIn Self.members
+			entity.SetKillCount(0)
 			Self.Remove(entity)
 		Next
 	End Method
@@ -63,6 +64,11 @@ Type TParty
 	' GetID
 	Method GetID:Int()
 		Return Self.id
+	End Method
+	
+	' GetName
+	Method GetName:String()
+		Return Self.name
 	End Method
 	
 	' GetKillCount
