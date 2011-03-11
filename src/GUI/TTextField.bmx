@@ -9,6 +9,8 @@ Type TTextField Extends TWidget
 	Field cursorLastBlink:Int
 	Field savedPosition:Int
 	Field onEnterKey(widget:TWidget)
+	Field displayCharacter:String
+	Field displayText:String
 	
 	' Virtual Whitespace
 	Field virtualWhitespaces:Int
@@ -28,6 +30,21 @@ Type TTextField Extends TWidget
 		If Self.cursorStart > Self.text.length
 			Self.SetCursorPosition(Self.text.length - 1)
 		EndIf
+		
+		If Self.displayCharacter
+			Self.displayText = ""
+			For Local I:Int = 1 To Self.text.length
+				Self.displayText :+ Self.displayCharacter
+			Next
+		Else
+			Self.displayText = Self.text
+		EndIf
+	End Method
+	
+	' SetDisplayCharacter
+	Method SetDisplayCharacter(char:String)
+		Self.displayCharacter = char
+		Self.SetText(Self.GetText())
 	End Method
 	
 	' SetCursorPosition
@@ -47,8 +64,8 @@ Type TTextField Extends TWidget
 			Self.cursorStart:+length
 		End If
 		
-		Self.cursorX = TextWidth(Self.text[..Self.cursorStart])
-		Self.cursorWidth = TextWidth(Self.text[Self.cursorStart..Self.cursorEnd])
+		Self.cursorX = TextWidth(Self.displayText[..Self.cursorStart])
+		Self.cursorWidth = TextWidth(Self.displayText[Self.cursorStart..Self.cursorEnd])
 		Self.cursorLastBlink = MilliSecs()
 	End Method
 	
@@ -68,12 +85,12 @@ Type TTextField Extends TWidget
 		
 		If offset < 0
 			Return 0
-		ElseIf offset > TextWidth(Self.text)
+		ElseIf offset > TextWidth(Self.displayText)
 			Return Self.text.Length
 		End If
 		
-		For Local I:Int = 0 To Self.text.Length
-			If TextWidth(Self.text[..I]) > offset
+		For Local I:Int = 0 To Self.displayText.Length
+			If TextWidth(Self.displayText[..I]) > offset
 				Return I - 1
 			End If
 		Next
@@ -215,7 +232,7 @@ Type TTextField Extends TWidget
 		DrawRect Self.rX, Self.rY, Self.rWidth, Self.rHeight
 		
 		.SetColor Self.textR, Self.textG, Self.textB
-		DrawText Self.text, Self.rX + Self.padding.x1, Self.rY + Self.rHeight / 2 - Self.textSizeY / 2
+		DrawText Self.displayText, Self.rX + Self.padding.x1, Self.rY + Self.rHeight / 2 - Self.textSizeY / 2
 		
 		If Self.HasFocus()
 			' Cursor

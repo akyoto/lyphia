@@ -21,6 +21,8 @@ Type TGameStateMenu Extends TGameState
 	' GUI
 	Field gui:TGUI
 	Field guiFont:TImageFont
+	Field playerStatsFont:TImageFont
+	Field playerStatsNameFont:TImageFont
 	Field menuContainer:TWidget
 	
 	' Init
@@ -37,6 +39,9 @@ Type TGameStateMenu Extends TGameState
 		
 		' Reset InGame network state
 		gsInGame.inNetworkMode = False
+		
+		' Fetch player info
+		CreateThread(TGameStateMenu.GetPlayerInfoThreadFunc, Null)
 	End Method
 	
 	' InitResources
@@ -49,6 +54,8 @@ Type TGameStateMenu Extends TGameState
 		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/menu/")
 		
 		Self.guiFont = game.fontMgr.Get("MenuFont")
+		Self.playerStatsFont = game.fontMgr.Get("PlayerStatsFont")
+		Self.playerStatsNameFont = game.fontMgr.Get("PlayerStatsNameFont")
 	End Method
 	
 	' InitGUI
@@ -108,12 +115,29 @@ Type TGameStateMenu Extends TGameState
 		' GUI
 		Self.gui.Draw()
 		
+		' Account info
+		SetImageFont Self.playerStatsNameFont
+		DrawText String(game.accountInfo.ValueForKey("name")), 15, 15
+		
+		SetImageFont Self.playerStatsFont
+		DrawText "Points:", 25, 55
+		DrawText "Kills:", 25, 75
+		DrawText "Wins:", 25, 95
+		DrawText "Loses:", 25, 115
+		
+		DrawText String(game.accountInfo.ValueForKey("points")), 105, 55
+		DrawText String(game.accountInfo.ValueForKey("kills")), 105, 75
+		DrawText String(game.accountInfo.ValueForKey("wins")), 105, 95
+		DrawText String(game.accountInfo.ValueForKey("loses")), 105, 115
+		
 		' Swap buffers
 		Flip game.vsync
 		
 		' Quit
 		If TInputSystem.GetKeyHit(KEY_ESCAPE)
-			game.SetGameState(Null)
+			game.accountID = 0
+			game.accountInfo = CreateMap()
+			game.SetGameStateByName("LogIn")
 		EndIf
 	End Method
 		
@@ -121,6 +145,22 @@ Type TGameStateMenu Extends TGameState
 	Method Remove()
 		game.logger.Write("Average FPS was: " + Int(Self.frameCounter.GetAverageFPS()))
 	End Method
+	
+	' GetPlayerInfoThreadFunc
+	Function GetPlayerInfoThreadFunc:Object(obj:Object)
+		' Account
+		Local infoStream:TStream = ReadStream(HOST_ROOT + "lyphia/user/info.php?id=" + game.accountID)
+		If infoStream.ReadLine() <> "-1"
+			game.accountInfo.Insert("points", infoStream.ReadLine())
+			game.accountInfo.Insert("kills", infoStream.ReadLine())
+			game.accountInfo.Insert("wins", infoStream.ReadLine())
+			game.accountInfo.Insert("loses", infoStream.ReadLine())
+		Else
+			' TODO: Error msg
+			game.logger.Write("Failed fetching account stats")
+			Return Null
+		EndIf
+	End Function
 	
 	' OnAppSuspended
 	Method OnAppSuspended()

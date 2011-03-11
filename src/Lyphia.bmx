@@ -29,6 +29,7 @@ Framework BRL.Basic
 
 ' Files
 Import "GameStates/TGameStateInit.bmx"
+Import "GameStates/TGameStateLogIn.bmx"
 Import "GameStates/TGameStateMenu.bmx"
 Import "GameStates/TGameStateInGame.bmx"
 Import "GameStates/TGameStateArena.bmx"
@@ -42,13 +43,15 @@ Try
 	game = TGame.Create()
 	
 	gsInit = TGameStateInit.Create(game)
+	gsLogIn = TGameStateLogIn.Create(game)
 	gsMenu = TGameStateMenu.Create(game)
 	gsInGame = TGameStateInGame.Create(game)
 	gsArena = TGameStateArena.Create(game)
 	gsEditor = TGameStateEditor.Create(game)
 	
 	game.SetGameState(gsInit)
-	game.SetGameState(gsMenu)
+	game.SetGameState(gsLogIn)
+	'game.SetGameState(gsMenu)
 	'game.SetGameState(gsInGame)
 	'game.SetGameState(gsArena)
 	'game.SetGameState(gsEditor)

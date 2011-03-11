@@ -50,6 +50,10 @@ Type TGame
 	Field audioDriver:String
 	Field vsync:Int
 	
+	' Account
+	Field accountID:Int
+	Field accountInfo:TMap
+	
 	' Network
 	Field receiveTimeout:Int
 	Field sendTimeout:Int
@@ -104,6 +108,10 @@ Type TGame
 		?Threaded
 			Self.appCheckThread = Null
 		?
+		
+		' Account
+		Self.accountID = 0
+		Self.accountInfo = CreateMap()
 		
 		' Lua object
 		LuaRegisterObject(Self, "game")

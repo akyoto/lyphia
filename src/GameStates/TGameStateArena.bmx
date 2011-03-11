@@ -971,6 +971,8 @@ Type TClientFuncs
 			EndIf
 			gsArena.msgList.ScrollToMax()
 		gsArena.guiMutex.Unlock()
+		
+		killed.Reset()
 	End Function
 	
 	' SetHP

@@ -422,16 +422,18 @@ Type TMeteorRain Extends TFireMagicInstance
 	Field radius:Int
 	Field lastMeteorTime:Int
 	Field meteorInterval:Int
+	Field meteorSize:Int
 	
 	' Init
-	Method Init(castedBy:TEntity, nX:Int, nY:Int, nRadius:Int)
+	Method Init(castedBy:TEntity, nX:Int, nY:Int, nRadius:Int, nMeteorSize:Int, nRunTime:Int)
 		Super.InitInstance(castedBy)
 		
 		Self.x = nX
 		Self.y = nY
 		Self.radius = nRadius
+		Self.meteorSize = nMeteorSize
 		
-		Self.maxRunTime = 3000
+		Self.maxRunTime = nRunTime
 		Self.lastMeteorTime = 0
 		Self.meteorInterval = 100
 	End Method
@@ -447,7 +449,7 @@ Type TMeteorRain Extends TFireMagicInstance
 			Local degree:Int = Rand(0, 360)
 			Local randRadius:Int = Rand(0, Self.radius)
 			gsInGame.chanEffects.Play("Meteor")
-			TMeteor.Create(Self.caster, Self.x + CosFastSec(degree) * randRadius, Self.y - SinFastSec(degree) * randRadius * perspectiveFactor, Rand(10, 14), Rand(-170, 170), Rand(200, 400))
+			TMeteor.Create(Self.caster, Self.x + CosFastSec(degree) * randRadius, Self.y - SinFastSec(degree) * randRadius * perspectiveFactor, Self.meteorSize, Rand(-170, 170), Rand(200, 500))
 			Self.lastMeteorTime = MilliSecs()
 		EndIf
 	End Method
@@ -459,9 +461,9 @@ Type TMeteorRain Extends TFireMagicInstance
 	End Method
 	
 	' Create
-	Function Create:TMeteorRain(castedBy:TEntity, nX:Int, nY:Int, nRadius:Int)
+	Function Create:TMeteorRain(castedBy:TEntity, nX:Int, nY:Int, nRadius:Int, nMeteorSize:Int, nRunTime:Int)
 		Local skill:TMeteorRain = New TMeteorRain
-		skill.Init(castedBy, nX, nY, nRadius)
+		skill.Init(castedBy, nX, nY, nRadius, nMeteorSize, nRunTime)
 		Return skill
 	End Function
 End Type
@@ -514,7 +516,7 @@ Type SMeteorRain Extends TFireMagic
 			y = -SinFastSec(casterDegree) * 200
 		EndIf
 		
-		TMeteorRain.Create(Self.caster, Self.caster.GetMidX() + x, Self.caster.GetMidY() + y, 42)
+		TMeteorRain.Create(Self.caster, Self.caster.GetMidX() + x, Self.caster.GetMidY() + y, 42, 14, 3000)
 	End Method
 	
 	' GetName
@@ -573,7 +575,7 @@ Type SInferno Extends TFireMagic
 		gsInGame.chanEffects.Play("Inferno")
 		
 		For Local I:Int = 1 To 3
-			TMeteorRain.Create(Self.caster, Self.caster.GetMidX(), Self.caster.GetMidY(), 300)
+			TMeteorRain.Create(Self.caster, Self.caster.GetMidX(), Self.caster.GetMidY(), 300, Rand(20, 30), 3000)
 		Next
 	End Method
 	
