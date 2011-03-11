@@ -11,6 +11,7 @@ Type TPlayer Extends TEntity
 	Global players:TPlayer[256]
 	
 	Field id:Byte
+	Field accountID:Int
 	
 	Field mutex:TMutex
 	
@@ -51,6 +52,11 @@ Type TPlayer Extends TEntity
 	' GetID
 	Method GetID:Int()
 		Return Self.id
+	End Method
+	
+	' GetAccountID
+	Method GetAccountID:Int()
+		Return Self.accountID
 	End Method
 	
 	' SetID

@@ -77,7 +77,7 @@ Type TGameStateArena Extends TGameState
 		
 		' Modes
 		Self.modeList.Clear()
-		Self.arenaModes[0] = TDeathMatchByKills.Create(8)
+		Self.arenaModes[0] = TDeathMatchByKills.Create(3)
 		
 		' Add modes
 		For Local arenaMode:TArenaMode = EachIn Self.arenaModes
@@ -398,6 +398,7 @@ Type TGameStateArena Extends TGameState
 			
 			Self.room.streamMutex.Lock()
 				Self.room.stream.WriteByte(1)
+				Self.room.stream.WriteInt(game.accountID)
 				Self.room.stream.WriteLine(characterName)
 				Self.room.stream.WriteLine(Self.nickName)
 			Self.room.streamMutex.Unlock()
@@ -594,12 +595,14 @@ Type TServerFuncs
 	
 	' ClientJoined
 	Function ClientJoined(client:TLyphiaClient)
+		Local accountID:Int = client.stream.ReadInt()
 		Local characterName:String = client.stream.ReadLine()
 		Local name:String = client.stream.ReadLine()
 		Local team:Byte = (gsArena.parties[0].GetNumberOfMembers() + gsArena.parties[1].GetNumberOfMembers()) Mod 2
 		
 		client.player = TPlayer.Create(characterName)
 		client.player.SetName(name)
+		client.player.accountID = accountID
 		gsArena.parties[team].Add(client.player)
 		If name = gsArena.nickName
 			gsArena.player = client.player
@@ -612,6 +615,7 @@ Type TServerFuncs
 				bcClient.streamMutex.Lock()
 					bcClient.stream.WriteByte(1)
 					bcClient.stream.WriteByte(client.player.GetID())
+					bcClient.stream.WriteInt(client.player.GetAccountID())
 					bcClient.stream.WriteByte(team)
 					bcClient.stream.WriteLine(name)
 					bcClient.stream.WriteLine(characterName)
@@ -622,6 +626,7 @@ Type TServerFuncs
 					client.streamMutex.Lock()
 						client.stream.WriteByte(3)
 						client.stream.WriteByte(bcClient.player.GetID())
+						client.stream.WriteInt(bcClient.player.GetAccountID())
 						client.stream.WriteByte(bcClient.player.GetParty() = gsArena.parties[1])
 						client.stream.WriteLine(bcClient.player.GetName())
 						client.stream.WriteLine(bcClient.player.GetCharacterName())
@@ -853,6 +858,7 @@ Type TClientFuncs
 	' ClientJoined
 	Function ClientJoined(room:TRoom)
 		Local playerID:Byte = room.stream.ReadByte()
+		Local accountID:Byte = room.stream.ReadInt()
 		Local team:Byte = room.stream.ReadByte()
 		Local name:String = room.stream.ReadLine()
 		Local characterName:String = room.stream.ReadLine()
@@ -861,6 +867,7 @@ Type TClientFuncs
 			Local player:TPlayer = TPlayer.Create(characterName)
 			player.SetID(playerID)
 			player.SetName(name)
+			player.accountID = accountID
 			gsArena.parties[team].Add(player)
 			If name = gsArena.nickName
 				gsArena.player = player
@@ -878,6 +885,7 @@ Type TClientFuncs
 	' ClientList
 	Function ClientList(room:TRoom)
 		Local playerID:Byte = room.stream.ReadByte()
+		Local accountID:Byte = room.stream.ReadInt()
 		Local team:Byte = room.stream.ReadByte()
 		Local name:String = room.stream.ReadLine()
 		Local characterName:String = room.stream.ReadLine()
@@ -885,6 +893,7 @@ Type TClientFuncs
 		Local player:TPlayer = TPlayer.Create(characterName)
 		player.SetID(playerID)
 		player.SetName(name)
+		player.accountID = accountID
 		gsArena.parties[team].Add(player)
 		
 		gsArena.UpdateParties()
@@ -972,7 +981,9 @@ Type TClientFuncs
 			gsArena.msgList.ScrollToMax()
 		gsArena.guiMutex.Unlock()
 		
+		Local killCount:Int = killed.GetKillCount()
 		killed.Reset()
+		killed.SetKillCount(killCount)
 	End Function
 	
 	' SetHP
@@ -1113,11 +1124,8 @@ Type TClientFuncs
 			gsArena.parties[team].RemoveByName(name)
 		gsArena.guiMutex.Unlock()
 		
-		gsArena.UpdateParties()
-		
 		TPlayer.players[playerID].Remove()
 		
-		' TODO: Mutex
-		gsArena.parties[team].RemoveByName(name)
+		gsArena.UpdateParties()
 	End Function
 End Type

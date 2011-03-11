@@ -18,8 +18,8 @@ Import BRL.D3D9Max2D
 ' Files
 Import "Global.bmx"
 Import "TLog.bmx"
-Import "TInputSystem.bmx"
 Import "TLua.bmx"
+Import "TInputSystem.bmx"
 Import "Managers/TImageManager.bmx"
 Import "Managers/TSoundManager.bmx"
 Import "Managers/TScriptManager.bmx"

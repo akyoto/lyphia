@@ -23,6 +23,7 @@ Import "../GUI/TGUI.bmx"
 Import "../Utilities/Math.bmx"
 Import "../Utilities/Graphics.bmx"
 Import "../Utilities/Reflection.bmx"
+Import "../Utilities/Threading.bmx"
 Import "../ArenaModes/TDeathMatchByKills.bmx"
 
 ' Includes
@@ -128,6 +129,8 @@ Type TGameStateInGame Extends TGameState
 	Field lastPingCheck:Int
 	
 	Field returnToArena:Int
+	Field endGameSent:Int
+	Field accountUpdateSent:Int
 	
 	' Init
 	Method Init()
@@ -226,6 +229,9 @@ Type TGameStateInGame Extends TGameState
 			Self.player.techSlots[index].AddSkillAdvanceTrigger(TJoyKeyTrigger.Create(index, True))
 		Next
 		
+		' Own account ID
+		Self.player.accountID = game.accountID
+		
 		' GUI
 		game.logger.Write("Initializing GUI")
 		Self.InitGUI()
@@ -263,6 +269,8 @@ Type TGameStateInGame Extends TGameState
 		' Should be the last call in Init
 		If Self.inNetworkMode
 			Self.arenaMode.Start()
+			Self.endGameSent = False
+			Self.accountUpdateSent = False
 		EndIf
 	End Method
 	
@@ -1113,8 +1121,9 @@ Type TGameStateInGame Extends TGameState
 			EndIf
 		EndIf
 		
-		' Ping check
+		' Network mode
 		If Self.inNetworkMode
+			' Ping check
 			If MilliSecs() - Self.lastPingCheck > 1000
 				room.streamMutex.Lock()
 					room.stream.WriteByte(230)
@@ -1124,20 +1133,44 @@ Type TGameStateInGame Extends TGameState
 				Self.lastPingCheck = MilliSecs()
 			EndIf
 			
-			' Arena mode check
+			' Arena mode
 			Self.arenaMode.Update()
 			If Self.arenaMode.HasEnded()
 				SetImageFont Self.arenaBroadcastFont
 				DrawTextCentered Self.arenaMode.GetWinnerParty().GetName() + " wins", game.gfxWidthHalf, game.gfxHeightHalf / 2
 				
 				If Self.server <> Null
-					If MilliSecs() - Self.arenaMode.GetEndTime() > 5000
+					' Update account info
+					If Self.accountUpdateSent = False
+						Local points:Int[] = [1, 3]
+						Local isWinner:Int
+						
+						For Local client:TLyphiaClient = EachIn Self.server.clientList
+							isWinner = Self.arenaMode.GetWinnerParty().Contains(client.player)
+							
+							SpawnHTTPThread	( ..
+											HOST_ROOT + "lyphia/user/addstats.php" + ..
+											"?id=" + client.player.accountID + ..
+											"&points=" + points[isWinner] + ..
+											"&kills=" + client.player.GetKillCount() + ..
+											"&wins=" + isWinner + ..
+											"&loses=" + Not(isWinner) ..
+										)
+						Next
+						
+						Self.accountUpdateSent = True
+					EndIf
+					
+					' End game
+					If MilliSecs() - Self.arenaMode.GetEndTime() > 5000 And Self.endGameSent = False
 						' Send all clients
 						For Local client:TLyphiaClient = EachIn Self.server.clientList
 							client.streamMutex.Lock()
 								client.stream.WriteByte(254)
 							client.streamMutex.Unlock()
 						Next
+						
+						Self.endGameSent = True
 					EndIf
 				EndIf
 			Else
