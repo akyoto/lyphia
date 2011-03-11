@@ -10,6 +10,7 @@ Import "../TFrameRate.bmx"
 Import "../GUI/TGUI.bmx"
 Import "../Multiplayer/TServer.bmx"
 Import "../Multiplayer/TRoom.bmx"
+Import "../Utilities/Strings.bmx"
 Import "../GameStates/TGameStateInGame.bmx"
 
 ' Global
@@ -29,24 +30,25 @@ Type TGameStateArena Extends TGameState
 	' Networking
 	Field room:TRoom
 	Field server:TServer
+	Field rooms:String[]
 	
 	' GUI
 	Field gui:TGUI
 	Field guiFont:TImageFont
 	Field guiMutex:TMutex
 	Field menuContainer:TWidget
-	Field roomList:TTextField
+	Field roomList:TListBox
 	Field charList:TListBox
 	Field joinButton:TButton
 	Field hostButton:TButton
 	Field roomContainer:TWidget
 	Field charContainer:TWidget
-	Field nameField:TTextField
 	Field chatField:TTextField
 	Field msgList:TListBox
 	Field clientList:TListBox[2]
 	Field teamChange:TButton[2]
 	Field roomOptions:TGroup
+	Field roomName:TTextField
 	Field modeList:TListBox
 	Field arenaModeIndex:Byte
 	
@@ -55,6 +57,9 @@ Type TGameStateArena Extends TGameState
 	Field player:TPlayer
 	Field nickName:String
 	Field startGame:Int
+	
+	Field lastRoomListFetch:Int
+	Field roomListFetchInterval:Int
 	
 	' Init
 	Method Init()
@@ -91,7 +96,10 @@ Type TGameStateArena Extends TGameState
 		Self.parties[1].SetCastColor(0, 224, 255)
 		
 		' Name
-		Self.nickName = "Warrior_" + Rand(1000, 9999)
+		Self.nickName = String(game.accountInfo.ValueForKey("name"))
+		
+		' Room list downloading
+		Self.roomListFetchInterval = 5000
 		
 		' Msg handlers
 		TServerFuncs.InitMsgHandlers()
@@ -156,33 +164,34 @@ Type TGameStateArena Extends TGameState
 		' Main container
 		Self.menuContainer = TWindow.Create("menuContainer", "Arena")
 		Self.menuContainer.SetPosition(0.5, 0.5)
-		Self.menuContainer.SetSizeAbs(180, 188)
+		Self.menuContainer.SetSizeAbs(250, 338)
 		Self.menuContainer.SetPadding(5, 5, 5, 5)
 		Self.menuContainer.UseCurrentAreaAsClientArea()
 		Self.menuContainer.SetPositionAbs(-Self.menuContainer.GetWidth() / 2, -Self.menuContainer.GetHeight() / 2)
 		Self.gui.Add(Self.menuContainer)
 		
 		' Buttons
-		Self.menuContainer.Add(TLabel.Create("nameFieldLabel", "Your nickname:", 0, 0))
+		Self.menuContainer.Add(TLabel.Create("roomNameFieldLabel", "Enter room name:", 0, 0))
 		
-		Self.nameField = TTextField.Create("nameField", "", 0, 20, 0, 24)
-		Self.nameField.SetSize(1.0, 0)
-		Self.nameField.onEdit = TGameStateArena.SetNickNameFunc
-		Self.menuContainer.Add(Self.nameField)
+		Self.roomName = TTextField.Create("roomNameField", "localhost", 0, 20, 0, 24)
+		Self.roomName.SetSize(1.0, 0)
+		Self.menuContainer.Add(Self.roomName)
 		
-		Self.menuContainer.Add(TLabel.Create("roomListLabel", "Choose a room:", 0, 50))
+		Self.menuContainer.Add(TLabel.Create("roomListLabel", "Or choose a room:", 0, 50))
 		
-		Self.roomList = TTextField.Create("roomList", "localhost", 0, 70, 0, 24)
-		Self.roomList.SetSize(1.0, 0)
+		Self.roomList = TListBox.Create("roomList", 0, 70, 0, -125)
+		Self.roomList.SetSize(1.0, 1.0)
 		Self.menuContainer.Add(Self.roomList)
 		
-		Self.joinButton = TButton.Create("joinButton", "Join room", 0, 100, 0, 24)
+		Self.joinButton = TButton.Create("joinButton", "Join room", 0, -50, 0, 24)
 		Self.joinButton.SetSize(1.0, 0)
+		Self.joinButton.SetPosition(0, 1.0)
 		Self.joinButton.onClick = TGameStateArena.JoinRoomFunc
 		Self.menuContainer.Add(Self.joinButton)
 		
-		Self.hostButton = TButton.Create("hostButton", "Host room", 0, 125, 0, 24)
+		Self.hostButton = TButton.Create("hostButton", "Host room", 0, -25, 0, 24)
 		Self.hostButton.SetSize(1.0, 0)
+		Self.hostButton.SetPosition(0, 1.0)
 		Self.hostButton.onClick = TGameStateArena.HostRoomFunc
 		Self.menuContainer.Add(Self.hostButton)
 	End Method
@@ -191,7 +200,7 @@ Type TGameStateArena Extends TGameState
 	Method InitCharacterGUI()
 		' Main container
 		Self.charContainer = TWindow.Create("charContainer", "Character")
-		Self.charContainer.SetPosition(0.5, 0.8)
+		Self.charContainer.SetPosition(0.5, 0.87)
 		Self.charContainer.SetSizeAbs(200, 125)
 		Self.charContainer.SetPadding(5, 5, 5, 5)
 		Self.charContainer.UseCurrentAreaAsClientArea()
@@ -292,7 +301,7 @@ Type TGameStateArena Extends TGameState
 			For Local I:Int = 0 Until 2
 				Self.clientList[I].Clear()
 				For Local member:TEntity = EachIn Self.parties[I].GetMembersList()
-					Self.clientList[I].AddItem member.GetName()
+					Self.clientList[I].AddItem member.GetName() + " (" + TPlayer(member).GetCharacterName() + ")"
 				Next
 			Next
 		Self.guiMutex.UnLock()
@@ -317,6 +326,11 @@ Type TGameStateArena Extends TGameState
 		' Server
 		If Self.server <> Null
 			Self.server.Update()
+		ElseIf Self.room = Null
+			If MilliSecs() - Self.lastRoomListFetch > Self.roomListFetchInterval
+				CreateThread(TGameStateArena.FetchRoomListThreadFunc, Null)
+				Self.lastRoomListFetch = MilliSecs()
+			EndIf
 		EndIf
 		
 		' Clear screen
@@ -430,6 +444,13 @@ Type TGameStateArena Extends TGameState
 			For Local I:Int = 0 Until 2
 				Self.parties[I].Clear()
 			Next
+			
+			' Notify main server
+			SpawnHTTPThread	( ..
+							HOST_ROOT + "lyphia/user/hostroom.php" + ..
+							"?id=" + game.accountID + ..
+							"&roomname=" + URLString(nName) ..
+						)
 		Catch exception:Object
 			Self.loggerServer.Write("Runtime error: " + exception.ToString())
 		End Try
@@ -492,13 +513,17 @@ Type TGameStateArena Extends TGameState
 	
 	' JoinRoomFunc
 	Function JoinRoomFunc(widget:TWidget)
-		gsArena.JoinRoom(gsArena.roomList.GetText())
-		gsArena.UpdateGUIState()
+		Local roomIndex:Int = gsArena.roomList.GetSelectedItem()
+		
+		If roomIndex >= 0
+			gsArena.JoinRoom(gsArena.rooms[roomIndex])
+			gsArena.UpdateGUIState()
+		EndIf
 	End Function
 	
 	' HostRoomFunc
 	Function HostRoomFunc(widget:TWidget)
-		gsArena.HostRoom(gsArena.roomList.GetText())
+		gsArena.HostRoom(gsArena.roomName.GetText())
 		gsArena.JoinRoom("127.0.0.1")
 		gsArena.UpdateGUIState()
 	End Function
@@ -509,10 +534,38 @@ Type TGameStateArena Extends TGameState
 		gsArena.UpdateGUIState()
 	End Function
 	
+	' FetchRoomListThreadFunc
+	Function FetchRoomListThreadFunc:Object(obj:Object)
+		Local stream:TStream = ReadStream(HOST_ROOT + "lyphia/room/list.php")
+		Local roomIP:String
+		Local roomName:String
+		Local roomNum:Int
+		Local count:Int = 0
+		
+		roomNum = Int(stream.ReadLine())
+		gsArena.rooms = New String[roomNum]
+		
+		gsArena.guiMutex.Lock()
+			gsArena.roomList.Clear()
+			While stream.Eof() = False
+				roomIP = stream.ReadLine()
+				roomName = stream.ReadLine()
+				
+				If roomIP <> ""
+					gsArena.roomList.AddItem roomName
+					gsArena.rooms[count] = roomIP
+					count :+ 1
+				EndIf
+			Wend
+		gsArena.guiMutex.UnLock()
+	End Function
+	
+	Rem
 	' SetNickNameFunc
 	Function SetNickNameFunc(widget:TWidget)
 		gsArena.nickName = widget.GetText()
 	End Function
+	End Rem
 	
 	' ClientSendChatMsgFunc
 	Function ClientSendChatMsgFunc(widget:TWidget)

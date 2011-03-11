@@ -186,7 +186,7 @@ Type TGameStateLogIn Extends TGameState
 		Local loginInfo:String[] = String[](obj)
 		Local accName:String = loginInfo[0]
 		Local pw:String = loginInfo[1]
-		Print pw
+		'Print pw
 		
 		' Account
 		Local loginStream:TStream = ReadStream(HOST_ROOT + "lyphia/user/login.php?login=" + accName + "&password=" + pw)

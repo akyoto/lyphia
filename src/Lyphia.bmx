@@ -12,14 +12,13 @@ Rem
 End Rem
 
 ' TODO
-' * Fix first game.speed value bug
 ' * Fix msg list (TListBox)
 ' * Custom autotiles
-' * Fix arena bugs (leaving / joining rooms)
 ' * Fix kill announcements
 ' * Fix chat function
 ' * More CC skills
 ' * Map Hindernisse (beschwören)
+' * Fix arena client deleting "by name"
 
 ' Strict
 SuperStrict

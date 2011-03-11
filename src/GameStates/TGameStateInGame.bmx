@@ -272,6 +272,8 @@ Type TGameStateInGame Extends TGameState
 			Self.endGameSent = False
 			Self.accountUpdateSent = False
 		EndIf
+		
+		game.speed = 0
 	End Method
 	
 	' InitResources
