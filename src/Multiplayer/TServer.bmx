@@ -192,7 +192,11 @@ Function ClientThreadFunc:Object(data:Object)
 	
 	' Disconnected
 	server.logMutex.Lock()
-		server.logger.Write(client.player.GetName() + " (" + client.ipString + ") disconnected.")
+		If client.player <> Null
+			server.logger.Write(client.player.GetName() + " (" + client.ipString + ") disconnected.")
+		Else
+			server.logger.Write(client.ipString + " disconnected (probably a room connectivity check).")
+		EndIf
 	server.logMutex.Unlock()
 	stream.Close()
 	

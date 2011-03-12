@@ -30,7 +30,7 @@ Type TGameStateArena Extends TGameState
 	' Networking
 	Field room:TRoom
 	Field server:TServer
-	Field rooms:String[]
+	Field rooms:TMap
 	
 	' GUI
 	Field gui:TGUI
@@ -513,10 +513,10 @@ Type TGameStateArena Extends TGameState
 	
 	' JoinRoomFunc
 	Function JoinRoomFunc(widget:TWidget)
-		Local roomIndex:Int = gsArena.roomList.GetSelectedItem()
+		Local roomIP:String = String(gsArena.rooms.ValueForKey(gsArena.roomList.GetText()))
 		
-		If roomIndex >= 0
-			gsArena.JoinRoom(gsArena.rooms[roomIndex])
+		If roomIP <> ""
+			gsArena.JoinRoom(roomIP)
 			gsArena.UpdateGUIState()
 		EndIf
 	End Function
@@ -540,24 +540,60 @@ Type TGameStateArena Extends TGameState
 		Local roomIP:String
 		Local roomName:String
 		Local roomNum:Int
-		Local count:Int = 0
 		
 		roomNum = Int(stream.ReadLine())
-		gsArena.rooms = New String[roomNum]
+		gsArena.rooms = CreateMap()
 		
-		gsArena.guiMutex.Lock()
-			gsArena.roomList.Clear()
-			While stream.Eof() = False
-				roomIP = stream.ReadLine()
-				roomName = stream.ReadLine()
+		gsArena.roomList.Clear()
+		While stream.Eof() = False
+			roomIP = stream.ReadLine()
+			roomName = stream.ReadLine()
+			
+			If roomIP <> ""
+				Local roomInfo:String[] = New String[2]
+				roomInfo[0] = roomName
+				roomInfo[1] = roomIP
 				
-				If roomIP <> ""
-					gsArena.roomList.AddItem roomName
-					gsArena.rooms[count] = roomIP
-					count :+ 1
-				EndIf
-			Wend
-		gsArena.guiMutex.UnLock()
+				CreateThread(TGameStateArena.CheckRoomThreadFunc, roomInfo)
+			EndIf
+		Wend
+	End Function
+	
+	' CheckRoomThreadFunc
+	Function CheckRoomThreadFunc:Object(data:Object)
+		Local roomInfo:String[] = String[](data)
+		Local roomName:String = roomInfo[0]
+		Local ip:String = roomInfo[1]
+		
+		Local netIP:Int = TNetwork.GetHostIP(ip)
+		
+		Print "Checking " + roomName + " <" + ip + ">"
+		
+		Local stream:TTCPStream = New TTCPStream
+		If stream.Init() = 0 Then Return Null
+		
+		stream.SetTimeouts(game.receiveTimeout, game.sendTimeout, game.acceptTimeout)
+		If stream.SetLocalPort() = 0 Then Return Null
+		stream.SetRemoteIP(netIP)
+		stream.SetRemotePort(TGameStateArena.SERVER_PORT)
+		If stream.Connect() = 0 Then Return Null
+		stream.Close()
+		
+		Local alreadyExists:Int = False
+		For Local value:String = EachIn MapValues(gsArena.rooms)
+			If value = ip
+				alreadyExists = True
+				Exit
+			EndIf
+		Next
+		
+		' Add to room list
+		If alreadyExists = False
+			gsArena.guiMutex.Lock()
+				gsArena.rooms.Insert(roomName, ip)
+				gsArena.roomList.AddItem roomName
+			gsArena.guiMutex.UnLock()
+		EndIf
 	End Function
 	
 	Rem
@@ -692,17 +728,19 @@ Type TServerFuncs
 	' ClientDisconnected
 	Function ClientDisconnected(client:TLyphiaClient)
 		' Notify other players
-		client.server.clientListMutex.Lock()
-			For Local bcClient:TLyphiaClient = EachIn client.server.clientList
-				' Code + Team number + Player name
-				bcClient.streamMutex.Lock()
-					bcClient.stream.WriteByte(2)
-					bcClient.stream.WriteByte(client.player.GetID())
-					bcClient.stream.WriteByte(client.player.GetParty() = gsArena.parties[1])
-					bcClient.stream.WriteLine(client.player.GetName())
-				bcClient.streamMutex.Unlock()
-			Next
-		client.server.clientListMutex.Unlock()
+		If client.player <> Null
+			client.server.clientListMutex.Lock()
+				For Local bcClient:TLyphiaClient = EachIn client.server.clientList
+					' Code + Team number + Player name
+					bcClient.streamMutex.Lock()
+						bcClient.stream.WriteByte(2)
+						bcClient.stream.WriteByte(client.player.GetID())
+						bcClient.stream.WriteByte(client.player.GetParty() = gsArena.parties[1])
+						bcClient.stream.WriteLine(client.player.GetName())
+					bcClient.streamMutex.Unlock()
+				Next
+			client.server.clientListMutex.Unlock()
+		EndIf
 	End Function
 	
 	' ChangeParty
