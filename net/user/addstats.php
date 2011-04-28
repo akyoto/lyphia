@@ -1,5 +1,5 @@
 <?php
-	include("../../../wordpress/wp-blog-header.php");
+	include("../../../wp-blog-header.php");
 	$id = $wpdb->escape($_GET["id"]);
 	$points = $wpdb->escape($_GET["points"]);
 	$kills = $wpdb->escape($_GET["kills"]);

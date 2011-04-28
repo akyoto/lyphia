@@ -1,5 +1,5 @@
 <?php
-	include("../../../wordpress/wp-blog-header.php");
+	include("../../../wp-blog-header.php");
 	$login = $wpdb->escape($_GET["login"]);
 	$password = $wpdb->escape($_GET["password"]);
 	$name = $wpdb->escape($_GET["name"]);

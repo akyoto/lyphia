@@ -1,5 +1,5 @@
 <?php
-	include("../../../wordpress/wp-blog-header.php");
+	include("../../../wp-blog-header.php");
 	$players = $wpdb->get_results("SELECT name, points, kills, wins, loses FROM lyphia_users WHERE id = " . $wpdb->escape($_GET["id"]) ." LIMIT 1");
 	
 	// Return player info

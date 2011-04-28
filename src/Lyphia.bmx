@@ -19,8 +19,6 @@ End Rem
 ' * More CC skills
 ' * Map Hindernisse (beschwören)
 ' * Fix arena client deleting "by name"
-' * SetGraphicsDriver D3D7 for Mac
-' * Add NEWLINE for Mac
 
 ' Strict
 SuperStrict

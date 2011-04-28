@@ -30,6 +30,7 @@ Type TGameStateLogIn Extends TGameState
 	Field loginButton:TButton
 	Field registerButton:TButton
 	Field loginThread:TThread
+	Field netAliveThread:TThread
 	
 	Field rMenuContainer:TWidget
 	Field rLoginField:TTextField
@@ -203,6 +204,9 @@ Type TGameStateLogIn Extends TGameState
 		EndIf
 		
 		If game.accountID > 0
+			If Self.netAliveThread = Null
+				Self.netAliveThread = CreateThread(TGameStateLogIn.NetAliveThreadFunc, Null)
+			EndIf
 			game.SetGameStateByName("Menu")
 		EndIf
 	End Method
@@ -244,7 +248,7 @@ Type TGameStateLogIn Extends TGameState
 		'Print pw
 		
 		' Account
-		Local loginStream:TStream = ReadStream(HOST_ROOT + "lyphia/user/login.php?login=" + accName + "&password=" + pw)
+		Local loginStream:TStream = ReadStream(HOST_ROOT + "lyphia/user/login.php?login=" + URLString(accName) + "&password=" + pw)
 		
 		Local result:Int = Int(loginStream.ReadLine())
 		Local playerName:String = loginStream.ReadLine()
@@ -252,6 +256,8 @@ Type TGameStateLogIn Extends TGameState
 		If result > 0
 			game.accountInfo.Insert("name", playerName)
 			game.accountID = result
+		Else
+			Print "Error logging in (" + accName + ")"
 		EndIf
 	End Function
 	
@@ -265,6 +271,7 @@ Type TGameStateLogIn Extends TGameState
 		Local loginName:String = gsLogIn.rLoginField.GetText()
 		Local pw:String = MD5(MD5(gsLogIn.rPWField.GetText()))
 		Local name:String = gsLogIn.rNameField.GetText()
+		'Print pw
 		
 		' Account
 		Local createAccountStream:TStream = ReadStream( ..
@@ -298,6 +305,17 @@ Type TGameStateLogIn Extends TGameState
 			gsLogIn.menuContainer.SetVisible(True)
 			gsLogIn.rMenuContainer.SetVisible(False)
 		EndIf
+	End Function
+	
+	' NetAliveFunc
+	Function NetAliveThreadFunc:Object(obj:Object)
+		While 1
+			SpawnHTTPThread	( ..
+							HOST_ROOT + "lyphia/user/alive.php" + ..
+							"?id=" + game.accountID ..
+						)
+			Delay 5000
+		Wend
 	End Function
 	
 	' Create

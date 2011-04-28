@@ -1,5 +1,5 @@
 <?php
-	include("../../../wordpress/wp-blog-header.php");
+	include("../../../wp-blog-header.php");
 	$myrows = $wpdb->get_results("SELECT id, name FROM lyphia_users WHERE login = '" . $wpdb->escape($_GET["login"]) . "' AND password = '" . $wpdb->escape($_GET["password"]) ."' LIMIT 1");
 	
 	// IP

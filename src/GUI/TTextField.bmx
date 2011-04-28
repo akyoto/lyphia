@@ -165,6 +165,14 @@ Type TTextField Extends TWidget
 				Case 0
 					' Nothing
 					
+				Case KEY_TAB
+					For Local widget:TWidget = EachIn Self.parent.GetChildsList()
+						If TTextField(widget) And widget <> Self
+							widget.Focus()
+							Exit
+						EndIf
+					Next
+					
 				Case KEY_ESCAPE
 					Self.UnFocus()
 					

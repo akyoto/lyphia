@@ -1,5 +1,5 @@
 <?php
-	include("../../../wordpress/wp-blog-header.php");
+	include("../../../wp-blog-header.php");
 	$players = $wpdb->get_results("SELECT ip, room_name FROM lyphia_users WHERE room_name IS NOT NULL ORDER BY room_date DESC");
 	
 	// TODO: After last_login + 10 minutes, delete the room
