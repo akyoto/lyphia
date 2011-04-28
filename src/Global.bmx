@@ -5,10 +5,7 @@ SuperStrict
 Global FS_ROOT:String = "../"
 
 ' Host
-Global HOST_ROOT:String = "http::blitzprog.com/scripts/"
+Global HOST_ROOT:String = "http::blitzprog.org/scripts/"
 
-?Win32
-	Global NEWLINE:String = "~r~n"
-?Linux|MacOS
-	Global NEWLINE:String = "~n"
-?
+' Newline
+Global NEWLINE:String = "~n"

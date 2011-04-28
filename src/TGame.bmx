@@ -221,6 +221,7 @@ Type TGame
 		
 		' Select graphics driver
 		Select game.driver.ToUpper()
+			?Win32
 			Case "DIRECT3D7", "DIRECTX7", "D3D7", "DX7"
 				game.logger.Write("Init graphics driver: Direct3D7")
 				SetGraphicsDriver D3D7Max2DDriver()
@@ -228,7 +229,7 @@ Type TGame
 			Case "DIRECT3D9", "DIRECTX9", "D3D9", "DX9"
 				game.logger.Write("Init graphics driver: Direct3D9")
 				SetGraphicsDriver D3D9Max2DDriver()
-				
+			?
 			Default
 				game.logger.Write("Init graphics driver: OpenGL")
 				SetGraphicsDriver GLMax2DDriver()
