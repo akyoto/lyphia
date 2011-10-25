@@ -65,7 +65,8 @@ End Type
 Type SDarkMatter Extends TShadowMagic
 	Field radius:Float
 	Field degree:Int
-	Field balldegree:Int
+	Field ballDegree:Int
+	
 	' Init
 	Method Init(nCaster:TEntity) 
 		Super.Init(nCaster)
@@ -77,27 +78,27 @@ Type SDarkMatter Extends TShadowMagic
 	Method Cast() 
 		Self.caster.Cast(Self)
 		
-		Local pDegree:Int
-		pDegree = Self.caster.GetDegree()
+		Local pDegree:Int = 0
 		For Local ballDegree:Int = -30 To 30 Step 30
-		Local casterOffsetX:Float = CosFastSec(Self.caster.GetDegree()+balldegree) * 80
-		Local casterOffsetY:Float = SinFastSec(Self.caster.GetDegree()+balldegree) * 80
-		For Local i:Int = 0 To game.speed / 8
-			pDegree = Rand(Self.degree+0, Self.degree + 360)
-				TParticleTween.Create(..
-				gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..  							' Effect group
-				650,..       			 								' Life time
-				gsInGame.particleImgFire,..    								' Image
-				Self.caster.GetMidX() + casterOffsetX, Self.caster.GetMidY() - casterOffsetY,  ..     						' Start position
-				Self.caster.GetMidX() + casterOffsetX, Self.caster.GetMidY() - casterOffsetY,  ..     							' End position
-				0.5, 0.01,..       									' Alpha
-				0, 360,..       										' Rotation
-				1, 1.5,..      										' Scale X (start, end)
-				1, 1.5,..      										' Scale Y (start, end)
-				255, 255, 255,..      									' Color (start)
-				0, 0, 0..       		
-		)
-		Next
+			Local casterOffsetX:Float = CosFastSec(Self.caster.GetDegree() + ballDegree) * 80
+			Local casterOffsetY:Float = SinFastSec(Self.caster.GetDegree() + ballDegree) * 80
+			
+			For Local i:Int = 0 To game.speed / 8
+				pDegree = Rand(Self.degree+0, Self.degree + 360)
+					TParticleTween.Create(..
+					gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..  				' Effect group
+					650,..       			 								' Life time
+					gsInGame.particleImgFire,..    								' Image
+					Self.caster.GetMidX() + casterOffsetX, Self.caster.GetMidY() - casterOffsetY,  ..     						' Start position
+					Self.caster.GetMidX() + casterOffsetX, Self.caster.GetMidY() - casterOffsetY,  ..     							' End position
+					0.5, 0.01,..       									' Alpha
+					0, 360,..       										' Rotation
+					1, 1.5,..      										' Scale X (start, end)
+					1, 1.5,..      										' Scale Y (start, end)
+					255, 255, 255,..      									' Color (start)
+					0, 0, 0..       		
+				)
+			Next
 		Next
 	End Method
 	
@@ -405,27 +406,33 @@ Type SDarkHole Extends TShadowMagic
 	Method Cast() 
 		Self.caster.Cast(Self)
 		
-		Local pDegree:Int
-		pDegree = Self.caster.GetDegree()
 		Local casterOffsetX:Float = CosFastSec(Self.caster.GetDegree()) * 100
 		Local casterOffsetY:Float = SinFastSec(Self.caster.GetDegree()) * 100
-		For Local i:Int = 0 To game.speed / 8
-			pDegree = Rand(Self.degree+0, Self.degree + 360)
+		
+		Local pDegree:Int
+		Local pX:Float, py:Float
+		Local start:Int = Self.GetCastProgress() * 360
+		
+		For pDegree = start To start + 359 Step 45
+			For Local i:Int = 0 To game.speed / 8
+				pX = Self.caster.GetMidX() + casterOffsetX
+				pY = Self.caster.GetMidY() - casterOffsetY
+				
 				TParticleTween.Create(..
-				gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..  							' Effect group
-				650,..       			 								' Life time
-				gsInGame.particleImgFire,..    								' Image
-				Self.caster.GetMidX() + casterOffsetX, Self.caster.GetMidY() - casterOffsetY,  ..     						' Start position
-				Self.caster.GetMidX() + casterOffsetX, Self.caster.GetMidY() - casterOffsetY,  ..     							' End position
-				0.5, 0.01,..       									' Alpha
-				0, 360,..       										' Rotation
-				1, 1.5,..      										' Scale X (start, end)
-				1, 1.5,..      										' Scale Y (start, end)
-				255, 255, 255,..      									' Color (start)
-				0, 0, 0..       		
-		)
+					gsInGame.GetEffectGroup(Self.caster.GetMidY()),  ..  				' Effect group
+					200,..       			 								' Life time
+					gsInGame.particleImgFire,..    								' Image
+					pX + CosFastSec(pDegree) * 50, pY - SinFastSec(pDegree) * 50,  ..     						' Start position
+					pX, pY,  ..     							' End position
+					0.1, 0.01,..       									' Alpha
+					0, 360,..       										' Rotation
+					1, 1.5,..      										' Scale X (start, end)
+					1, 1.5,..      										' Scale Y (start, end)
+					255, 255, 255,..      									' Color (start)
+					0, 0, 0..       		
+				)
+			Next
 		Next
-
 	End Method
 	
 	' Use
