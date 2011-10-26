@@ -63,6 +63,10 @@ Type TGameStateLogIn Extends TGameState
 		' Load fonts
 		game.fontMgr.AddResourcesFromDirectory(FS_ROOT + "data/fonts/")
 		
+		' Load music
+		game.soundMgr.GetChannel("Music").AddResourcesFromDirectory(FS_ROOT + "data/music/menu/")
+		game.soundMgr.GetChannel("Music").PlayMusic("menu_bg_1")
+		
 		' Load images
 		game.imageMgr.SetFlags(FILTEREDIMAGE)
 		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/menu/")

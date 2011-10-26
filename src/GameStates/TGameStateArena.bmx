@@ -127,6 +127,10 @@ Type TGameStateArena Extends TGameState
 		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/arena/")
 		game.imageMgr.AddResourcesFromDirectory(FS_ROOT + "data/arena/modes/")
 		
+		' Load music
+		game.soundMgr.GetChannel("Music").AddResourcesFromDirectory(FS_ROOT + "data/music/arena/")
+		game.soundMgr.GetChannel("Music").PlayMusic("arena_menu_bg_1")
+		
 		Self.guiFont = game.fontMgr.Get("ArenaGUIFont")
 	End Method
 	

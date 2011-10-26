@@ -135,6 +135,9 @@ Type TGameStateEditor Extends TGameState
 			Self.fillPreviewNodesMutex = CreateMutex()
 		?
 		
+		' No music
+		game.soundMgr.GetChannel("Music").StopPreviousSound()
+		
 		' Memory usage
 		Self.loggerEditor.Write("GC Memory allocated: " + GCMemAlloced() + " bytes")
 	End Method

@@ -55,6 +55,8 @@ End Type
 Type TSoundChannel Extends TResourceManager
 	Field name:String
 	'Field channel:TChannel
+	Field lastAudioChannel:TChannel
+	Field lastSoundName:String
 	Field logger:TLog
 	
 	' Init
@@ -63,6 +65,7 @@ Type TSoundChannel Extends TResourceManager
 		Super.AddExtension("wav")
 		Super.AddExtension("ogg")
 		Self.resourceType = "sound"
+		Self.lastAudioChannel = Null
 		
 		Self.name = nName
 		'Self.channel = AllocChannel() 
@@ -75,19 +78,28 @@ Type TSoundChannel Extends TResourceManager
 	End Method
 	
 	' Play
-	Method Play(name:String) 
+	Method Play(name:String)
 		Local sound:TSound = TSound(Self.resources.ValueForKey(name))
 		
 		If sound <> Null
 			Self.WriteLog("Playing sound '" + name + "'")
-			sound.Play()
+			Self.lastAudioChannel = sound.Play()
+			Self.lastSoundName = name
 		Else
 			Self.WriteLog("Failed playing sound '" + name + "'")
 		EndIf
 	End Method
 	
+	' PlayMusic
+	Method PlayMusic(name:String)
+		If name <> Self.lastSoundName
+			Self.StopPreviousSound()
+			Self.Play(name)
+		EndIf
+	End Method
+	
 	' Cue
-	Method Cue(name:String) 
+	Method Cue(name:String)
 		Local sound:TSound = TSound(Self.resources.ValueForKey(name))
 		
 		If sound <> Null
@@ -98,6 +110,19 @@ Type TSoundChannel Extends TResourceManager
 	' WriteLog
 	Method WriteLog(msg:String) 
 		Self.logger.Write("[" + Self.name + "] " + msg)
+	End Method
+	
+	' StopPreviousSound
+	Method StopPreviousSound()
+		If Self.lastAudioChannel <> Null
+			Self.lastAudioChannel.Stop()
+			Self.lastSoundName = ""
+		EndIf
+	End Method
+	
+	' Stop
+	Method Stop()
+		' TODO: Stop all hardware audio channels
 	End Method
 	
 	Rem

@@ -265,12 +265,17 @@ Type TGameStateInGame Extends TGameState
 		' Music
 		'Local music:TSound = LoadSound(FS_ROOT + "data/music/Okary-0.4.ogg", SOUND_LOOP)
 		'PlaySound music
+		game.soundMgr.GetChannel("Music").StopPreviousSound()
 		
 		' Should be the last call in Init
 		If Self.inNetworkMode
 			Self.arenaMode.Start()
 			Self.endGameSent = False
 			Self.accountUpdateSent = False
+			
+			' Load music
+			game.soundMgr.GetChannel("Music").AddResourcesFromDirectory(FS_ROOT + "data/music/arena/")
+			game.soundMgr.GetChannel("Music").PlayMusic("arena_bg_1")
 		EndIf
 		
 		game.speed = 0

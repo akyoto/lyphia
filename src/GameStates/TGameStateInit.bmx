@@ -79,6 +79,7 @@ Type TGameStateInit Extends TGameState
 		
 		' Audio channels
 		game.soundMgr.AddChannel("Effects")
+		game.soundMgr.AddChannel("Music")
 		
 		' Input
 		EnablePolledInput()
